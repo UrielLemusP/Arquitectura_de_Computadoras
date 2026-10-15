@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# ============================================================
+# scripts/vhdl-sim
+# Analiza y ejecuta un testbench con GHDL, generando un .vcd
+# para verlo después con scripts/vhdl-wave (GTKWave).
+#
+# Uso:
+#   scripts/vhdl-sim <unidad> <entidad_testbench>
+#   ej: scripts/vhdl-sim datapath-1 tb_alu
+#
+# Pasos: analiza src/ + tb/ -> elabora -> ejecuta -> salidas/<tb>.vcd
+# ============================================================
+set -euo pipefail
+
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ $# -lt 2 ]]; then
+    echo "Uso: vhdl-sim <unidad> <entidad_testbench>"
+    echo "  unidades: datapath-1 datapath-2 datapath-3 mapeo-memoria"
+    echo "  ejemplo:  vhdl-sim datapath-1 tb_alu"
+    exit 1
+fi
+
+UNIDAD="$1"
+TB="$2"
+DIR="$RAIZ/vhdl/$UNIDAD"
+
+if [[ ! -d "$DIR" ]]; then
+    echo "Error: no existe la unidad '$UNIDAD' (esperado: vhdl/$UNIDAD)"
+    exit 1
+fi
+
+if ! command -v ghdl >/dev/null 2>&1; then
+    echo "Error: ghdl no está instalado. Ejecuta: bash scripts/instalar.sh"
+    exit 1
+fi
+
+WORK="$DIR/.ghdl"
+SALIDAS="$DIR/salidas"
+mkdir -p "$WORK" "$SALIDAS"
+
+# 1) Analizar fuentes y testbenches
+echo "=== [$UNIDAD] Análisis (VHDL-2008) ==="
+mapfile -t FUENTES < <(find "$DIR/src" -name '*.vhd' -o -name '*.vhdl' 2>/dev/null | sort)
+mapfile -t TESTBENCHES < <(find "$DIR/tb" -name '*.vhd' -o -name '*.vhdl' 2>/dev/null | sort)
+
+if [[ ${#FUENTES[@]} -eq 0 && ${#TESTBENCHES[@]} -eq 0 ]]; then
+    echo "Error: no hay ficheros .vhd en $DIR/src ni $DIR/tb"
+    exit 1
+fi
+
+cd "$WORK"
+for f in "${FUENTES[@]}" "${TESTBENCHES[@]}"; do
+    [[ -z "$f" ]] && continue
+    echo "  - ${f#"$RAIZ"/}"
+    ghdl -a --std=08 --workdir="$WORK" "$f"
+done
+
+# 2) Elaborar el testbench pedido
+echo ""
+echo "=== Elaborando $TB ==="
+ghdl -e --std=08 --workdir="$WORK" -o "$WORK/$TB" "$TB"
+
+# 3) Ejecutar generando VCD
+VCD="$SALIDAS/$TB.vcd"
+echo ""
+echo "=== Ejecutando $TB ==="
+ghdl -r --std=08 --workdir="$WORK" "$TB" --vcd="$VCD" || {
+    echo ""
+    echo "Error: la simulación falló (revisa los errores arriba)."
+    exit 1
+}
+
+echo ""
+echo "Simulación correcta."
+echo "Ondas: $VCD"
+echo "Ver:   scripts/vhdl-wave \"$VCD\""

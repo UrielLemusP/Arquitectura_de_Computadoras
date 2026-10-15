@@ -1,0 +1,49 @@
+# ============================================================
+# Artefactos de LaTeX
+# ============================================================
+build/
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.xdv
+
+# Clase y estilo de Springer (se instalan vía paquetes del sistema,
+# ver scripts/instalar.sh — no se versionan por licencia)
+llncs.cls
+splncs04.bst
+
+# ============================================================
+# Artefactos de GHDL (simulación VHDL)
+# ============================================================
+.ghdl/
+*.cf
+*.o
+*.ali
+work-obj*.cf
+e~*.o
+*.vcd
+*.ghw
+
+# ============================================================
+# Salidas de simulación (las capturas sí van: PNG bajo reportes/)
+# ============================================================
+salidas/
+sim/salidas/
+
+# ============================================================
+# Editores y sistema
+# ============================================================
+*.swp
+*~
+.DS_Store
+Thumbs.db

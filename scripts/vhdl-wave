@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# ============================================================
+# scripts/vhdl-wave
+# Abre un archivo .vcd en GTKWave.
+#
+# Uso:
+#   scripts/vhdl-wave <archivo.vcd>
+#   ej: scripts/vhdl-wave vhdl/datapath-1/salidas/tb_alu.vcd
+#
+# En WSL: si no hay GUI disponible, ofrece abrir el .vcd en Windows.
+# ============================================================
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+    echo "Uso: vhdl-wave <archivo.vcd>"
+    exit 1
+fi
+
+VCD="$1"
+
+if [[ ! -f "$VCD" ]]; then
+    echo "Error: no existe '$VCD'"
+    echo "Genera las ondas primero con: scripts/vhdl-sim <unidad> <tb>"
+    exit 1
+fi
+
+if ! command -v gtkwave >/dev/null 2>&1; then
+    echo "Error: gtkwave no está instalado. Ejecuta: bash scripts/instalar.sh"
+    exit 1
+fi
+
+# ¿Estamos en WSL?
+ES_WSL=0
+if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null; then
+    ES_WSL=1
+fi
+
+# ¿Hay display gráfico?
+if [[ -n "${DISPLAY:-}" || -n "${WAYLAND_DISPLAY:-}" || -d /mnt/wslg ]]; then
+    gtkwave "$VCD" &
+    exit 0
+fi
+
+# Sin display
+if [[ $ES_WSL -eq 1 ]]; then
+    echo "GTKWave no puede abrirse: no hay GUI en esta sesión WSL."
+    echo ""
+    echo "Opciones:"
+    echo "  A) Windows 11: activa WSLg (wsl --update; reinicia WSL) y vuelve a intentarlo."
+    echo "  B) X server en Windows (VcXsrv/GWSL) y export DISPLAY=:0"
+    echo "  C) Abrir el .vcd en Windows con GTKWave instalado allí:"
+    echo "       explorer.exe \"\$(wslpath -w "$VCD")\""
+    if command -v explorer.exe >/dev/null 2>&1; then
+        read -r -p "¿Abrir en Windows ahora? [s/N] " RESP
+        if [[ "$RESP" =~ ^[sSyY] ]]; then
+            explorer.exe "$(wslpath -w "$VCD")"
+        fi
+    fi
+    exit 1
+fi
+
+echo "Error: no hay variable DISPLAY (¿entorno gráfico?)."
+echo "Prueba: DISPLAY=:0 gtkwave \"$VCD\""
+exit 1
