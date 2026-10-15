@@ -1,0 +1,72 @@
+# AGENTS.md — Reportes (Springer / llncs)
+
+Esta carpeta contiene los **4 reportes** del proyecto. Cada uno en su propia
+carpeta con un `main.tex`:
+
+```
+reportes/
+  comun/plantilla_base.tex   esqueleto llncs con todas las secciones (copiarlo)
+  datapath-1/   main.tex  referencias.bib  figuras/
+  datapath-2/
+  datapath-3/
+  mapeo-memoria/
+```
+
+## Plantilla obligatoria de los 4 reportes
+
+Cada reporte DEBE seguir exactamente este orden y estas extensiones
+(aproximadas; 1 cuartilla ≈ 1 página de la zona de impresión llncs de
+122 mm × 193 mm):
+
+| Sección | Contenido | Extensión |
+|---|---|---|
+| **Título** | Título del trabajo | — |
+| **Autores** | Los integrantes del equipo (nombre + afiliación + correo) | — |
+| **Resumen** | `Resumen.` + síntesis del trabajo | **< 100 palabras** |
+| **Palabras Clave** | `Palabras Clave:` separadas por comas, inicial mayúscula | — |
+| **1. Introducción** | Motivación, objetivos, estructura del paper | 1–2 cuartillas |
+| **2. Diseño teórico** | Marco teórico, arquitectura, módulos VHDL | 3–5 cuartillas |
+| **3. Propuesta experimental** | Metodología, bancos de prueba, herramientas (GHDL/GTKWave) | 1 hoja |
+| **4. Simulaciones de VHDL** | Capturas de los **módulos más importantes** | **máx. 2 hojas** |
+| **5. Resultados** | Análisis de las simulaciones, tablas, figuras | 3–5 cuartillas |
+| **6. Conclusiones** | Cierre y trabajo futuro | 1 cuartilla |
+| **Referencias** | Bibliografía | **≥ 15 referencias** |
+| **Apéndice** | **Código VHDL** completo (el de `vhdl/<unidad>/`) | — |
+
+Al trabajar en un reporte:
+
+1. **Copia `comun/plantilla_base.tex`** como punto de partida (preámbulo llncs,
+   bloque de autores, secciones ya nombradas).
+2. Mantén los **nombres de sección** de la tabla (son los que pide el formato).
+3. Si el usuario pide una sección concreta, respeta su extensión máxima.
+4. **No** metas texto de relleno inventado en referencias.
+
+## Reglas de formato llncs
+
+- **No editar `llncs.cls` ni `splncs04.bst`**: los instala el sistema
+  (`texlive-publishers`) y no se versionan (ver `.gitignore`).
+- Clase: `\documentclass[llncs]{llncs}`. Compilación **siempre** con
+  `scripts/latexbuild main.tex` (xelatex) — nunca `latexmk` a mano.
+- Bibliografía: `\bibliography{referencias}` con `referencias.bib` y el estilo
+  `splncs04` (numérico). Cita numérica `[n]`.
+- Texto justificado, imágenes con buena resolución y buen contraste en gris.
+- Figuras: `figuras/*.png`, referenciadas con `\includegraphics`.
+- Las capturas de simulación que se ponen en la sección 4 salen de
+  `vhdl/<unidad>/salidas/` (VCD) → exportadas a PNG en `figuras/`.
+
+## Referencias (regla estricta)
+
+- **Mínimo 15** por reporte.
+- Cada referencia debe indicar **exactamente dónde aparece el texto sugerido**:
+  en la entrada `.bib` o en el comentario de la cita, dejar constancia de la
+  ubicación concreta: capítulo/§, página, figura, tabla o URL + fecha de
+  consulta. Ejemplo de anotación interna:
+  `% cap. 4, p. 123 — frase sobre pipeline de etapas`.
+- No cites nada que no puedas ubicar en la fuente.
+
+## Apéndice con código VHDL
+
+El apéndice reproduce el código VHDL de la unidad correspondiente
+(`vhdl/<unidad>/src/`), con viñetas/listings legibles (monoespaciada, tamaño
+reducido, negro). Si el código cambia en `vhdl/`, hay que actualizar el
+apéndice del reporte correspondiente.

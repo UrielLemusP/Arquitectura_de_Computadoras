@@ -1,0 +1,41 @@
+# ============================================================
+# Normalización de finales de línea
+# IMPORTANTE para el equipo en WSL: evita que CRLF de Windows
+# rompa los scripts bash y genere conflictos de fusión.
+# ============================================================
+
+# Por defecto: texto con finales LF al hacer commit
+* text=auto
+
+# Scripts bash: SIEMPRE LF (CRLF los rompe)
+*.sh text eol=lf
+scripts/latexbuild text eol=lf
+scripts/vhdl-* text eol=lf
+
+# Fuentes LaTeX: LF
+*.tex text eol=lf
+*.bib text eol=lf
+*.sty text eol=lf
+*.cls text eol=lf
+*.bst text eol=lf
+
+# Fuentes VHDL: LF
+*.vhd text eol=lf
+*.vhdl text eol=lf
+
+# Markdown y configuración: LF
+*.md text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Binarios: no tocar
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.docx binary
+*.vcd binary
+*.ghw binary

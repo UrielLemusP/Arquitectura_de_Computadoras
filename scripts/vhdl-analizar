@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# ============================================================
+# scripts/vhdl-analizar
+# Analiza (compila) los fuentes VHDL de una unidad.
+#
+# Uso:
+#   scripts/vhdl-analizar <unidad>
+#   ej: scripts/vhdl-analizar datapath-1
+#
+# <unidad> es una de: datapath-1 | datapath-2 | datapath-3 | mapeo-memoria
+# Analiza vhdl/<unidad>/src/*.vhd con GHDL en modo VHDL-2008.
+# ============================================================
+set -euo pipefail
+
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ $# -lt 1 ]]; then
+    echo "Uso: vhdl-analizar <unidad>"
+    echo "  unidades: datapath-1 datapath-2 datapath-3 mapeo-memoria"
+    exit 1
+fi
+
+UNIDAD="$1"
+DIR="$RAIZ/vhdl/$UNIDAD"
+
+if [[ ! -d "$DIR" ]]; then
+    echo "Error: no existe la unidad '$UNIDAD' (esperado: vhdl/$UNIDAD)"
+    exit 1
+fi
+
+if ! command -v ghdl >/dev/null 2>&1; then
+    echo "Error: ghdl no está instalado. Ejecuta: bash scripts/instalar.sh"
+    exit 1
+fi
+
+# Recoger fuentes: src/ primero (dependencias), luego tb/
+mapfile -t FUENTES < <(find "$DIR/src" -name '*.vhd' -o -name '*.vhdl' 2>/dev/null | sort)
+mapfile -t TESTBENCHES < <(find "$DIR/tb" -name '*.vhd' -o -name '*.vhdl' 2>/dev/null | sort)
+
+if [[ ${#FUENTES[@]} -eq 0 && ${#TESTBENCHES[@]} -eq 0 ]]; then
+    echo "Error: no hay ficheros .vhd en $DIR/src ni $DIR/tb"
+    exit 1
+fi
+
+# Directorio de trabajo GHDL (fuera del repo para no ensuciar)
+WORK="$DIR/.ghdl"
+mkdir -p "$WORK"
+
+echo "=== Analizando unidad: $UNIDAD (VHDL-2008) ==="
+cd "$WORK"
+
+for f in "${FUENTES[@]}" "${TESTBENCHES[@]}"; do
+    [[ -z "$f" ]] && continue
+    echo "  - ${f#"$RAIZ"/}"
+    ghdl -a --std=08 --workdir="$WORK" "$f"
+done
+
+echo ""
+echo "Análisis correcto: ${#FUENTES[@]} fuente(s), ${#TESTBENCHES[@]} testbench(es)."
