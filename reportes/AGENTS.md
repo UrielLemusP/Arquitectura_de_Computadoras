@@ -74,10 +74,21 @@ la misma rama secciones de unidades distintas. Flujo completo en
 
 - **Mínimo 15** por reporte.
 - Cada referencia debe indicar **exactamente dónde aparece el texto sugerido**:
-  en la entrada `.bib` o en el comentario de la cita, dejar constancia de la
-  ubicación concreta: capítulo/§, página, figura, tabla o URL + fecha de
-  consulta. Ejemplo de anotación interna:
-  `% cap. 4, p. 123 — frase sobre pipeline de etapas`.
+  dejar constancia de la ubicación concreta (capítulo/§, página, figura, tabla
+  o URL + fecha de consulta) en el campo `note` de la entrada `.bib`. Ejemplo:
+
+  ```bibtex
+  @book{mannering2018,
+    author    = {Autor Apellido},
+    title     = {Título del libro},
+    publisher = {Editorial},
+    year      = {2018},
+    note      = {cap. 4, p. 123 — frase sobre pipeline de etapas}
+  }
+  ```
+
+  Ojo: el `.bib` **no admite comentarios** dentro de una entrada, y bibtex
+  falla si el texto no tiene ninguna `\cite`.
 - No cites nada que no puedas ubicar en la fuente.
 
 ## Apéndice con código VHDL
