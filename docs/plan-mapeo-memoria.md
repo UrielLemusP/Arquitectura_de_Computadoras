@@ -106,6 +106,60 @@ un fichero = una entidad, `snake_case`, `numeric_std`, comentarios en español,
 cabecera breve, testbenches con `assert ... severity failure` y
 `report "... OK"`.
 
+### Señales que debe exponer cada testbench en el `.vcd`
+
+Las capturas del reporte salen de los `.vcd`, así que cada tb declara
+señales `signal` (no solo variables internas) con estos nombres para que las
+ondas sean comparables entre los 3 mapeos:
+
+| Señal | Tipo | Para qué se ve en la captura |
+|---|---|---|
+| `clk`, `rst` | `std_logic` | base temporal y arranque |
+| `ciclo` | `unsigned` | contador de ciclos (eje horizontal legible) |
+| `addr` | `unsigned(9 downto 0)` | dirección solicitada por ciclo |
+| `req`, `ready` | `std_logic` | ventana de solicitud y fin de acceso |
+| `hit` | `std_logic` | **acierto (1) vs fallo (0)** — motivo principal de la captura |
+| `data` | `unsigned(31 downto 0)` | palabra devuelta (verifica dato correcto) |
+| `estado` | estado de la FSM (`enum` o `unsigned`) | se ve IDLE/COMPARE/FETCH_MEM/DONE |
+| `caches_hits`, `caches_misses` | `unsigned` (solo en tbs de métricas) | evolución de contadores |
+| `bloque_cargado` | `std_logic` (opcional) | pulso al completar una carga desde memoria |
+
+`tb_comparacion_mapeos` añade, por cada módulo, `hit_directo`,
+`hit_asociativa`, `hit_conjuntos` y sus contadores, para capturar en una sola
+onda los tres métodos lado a lado.
+
+### Workflow de capturas (VCD → PNG para el reporte)
+
+1. **Generar el `.vcd`** (no se versiona; `.gitignore` ya lo cubre):
+   ```bash
+   scripts/vhdl-sim mapeo-memoria tb_cache_directo
+   # → vhdl/mapeo-memoria/salidas/tb_cache_directo.vcd
+   ```
+2. **Abrirlo en GTKWave** con el wrapper oficial (no `gtkwave` a mano):
+   ```bash
+   scripts/vhdl-wave vhdl/mapeo-memoria/salidas/tb_cache_directo.vcd
+   ```
+3. **Cargar las señales** en el panel izquierdo (`SST`/jerarquía del tb) e
+   **insertarlas** en el panel de ondas: al menos `clk`, `ciclo`, `addr`,
+   `req`, `ready`, `hit`, `data`, `estado`.
+4. **Enfocar la zona útil**: buscar con `Search → Track` o zoom (`z`/`Z`) el
+   patrón que interesa mostrar — p. ej. un miss (`hit = '0'`) seguido del
+   pulso de carga y el siguiente hit. Ajustar a ~20–40 ciclos por captura para
+   que siga siendo legible en el ancho de columna llncs.
+5. **Exportar PNG**: `File → Print...` con destino *Print to File* (o
+   captura de la zona de ondas con la herramienta del sistema). Convertir el
+   PDF a PNG si hace falta (`pdftoppm -png -r 200`), fondo blanco y trazos
+   con buen contraste (las figuras se imprimen en gris).
+6. **Guardar en el reporte** con nombre descriptivo:
+   `reportes/mapeo-memoria/figuras/<tb>_<qué-se-ve>.png`
+   ej.: `figuras/tb_cache_directo_miss.png`,
+   `figuras/tb_comparacion_hits.png`.
+7. **Referenciar en el LaTeX** (sección 4) con `\includegraphics` + caption
+   que explique qué se observa (hit/miss, carga de bloque, contadores).
+
+Nota: los PNG de `figuras/` **sí se versionan** (evidencia del reporte); los
+`.vcd` de `salidas/` no.
+
 ## 5. Reporte — `reportes/mapeo-memoria/`
 
 Rellenar `main.tex` siguiendo la plantilla de `reportes/AGENTS.md`:
@@ -156,7 +210,7 @@ Cada paso es una rama independiente con su PR → `dev` (regla 6 de
 | 5 | `reporte/mapeo-memoria/marco-teorico` | título/autores, resumen, secciones 1–2 |
 | 6 | `reporte/mapeo-memoria/referencias` | `referencias.bib` ≥ 15 con `note` |
 | 7 | `reporte/mapeo-memoria/propuesta-experimental` | sección 3 |
-| 8 | `reporte/mapeo-memoria/simulaciones` | sección 4 + capturas en `figuras/` |
+| 8 | `reporte/mapeo-memoria/simulaciones` | sección 4 + capturas PNG en `figuras/` (workflow de la §4 de este plan) |
 | 9 | `reporte/mapeo-memoria/resultados-conclusiones` | secciones 5–6 |
 | 10 | `reporte/mapeo-memoria/apendice-vhdl` | apéndice con el código final |
 
