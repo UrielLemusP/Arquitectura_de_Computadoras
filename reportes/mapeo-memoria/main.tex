@@ -463,9 +463,220 @@ totales, 7/13, 10/10 y 13/7, coinciden con la Tabla~\ref{tab:bancos}.
 \section{Resultados}
 \label{sec:resultados}
 
-Análisis de las simulaciones: tablas comparativas, tiempos, comportamiento
-observado, cumplimiento de las pruebas (assert). Interpretación crítica.
-(3--5 cuartillas.)
+Esta sección analiza las métricas que los cinco bancos verifican en cada
+ejecución. Los recuentos de aciertos y fallos proceden de la salida de
+\texttt{tb\_comparacion\_\allowbreak mapeos}, que ejecuta los tres
+mapeos sobre la
+misma traza y una misma memoria de comportamiento, y las latencias de
+acceso se miden sobre los ficheros~VCD de la
+sección~\ref{sec:simulaciones}. Se usa la terminología habitual: ratio
+de aciertos $h$ (aciertos divididos entre accesos) y tasa de fallos
+$1-h$ \cite{tanenbaum2013,null2024}.
+
+\subsection{Métricas globales de la traza}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\hline
+\noalign{\smallskip}
+Métrica & Directo & Por conjuntos & Total \\ 
+\noalign{\smallskip}\hline\noalign{\smallskip}
+Aciertos (de 20) & 7 & 10 & 13 \\
+Fallos & 13 & 10 & 7 \\
+Tasa de aciertos & 35\,\% & 50\,\% & 65\,\% \\
+Fallos obligatorios & 7 & 7 & 7 \\
+Fallos de conflicto & 6 & 3 & 0 \\
+Fin de la simulación (ns) & 1415 & 1325 & 1235 \\
+\noalign{\smallskip}\hline
+\end{tabular}
+\caption{Resultados sobre la traza común de 20 accesos (salida de
+\texttt{tb\_comparacion\_mapeos} y fin de simulación de cada banco).}
+\label{tab:resultados}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.78\textwidth]{figuras/grafico_aciertos_fallos.png}
+  \caption{Composición de los 20 accesos de la traza en cada mapeo:
+    aciertos y fallos con su tasa.}
+  \label{fig:tasas}
+\end{figure}
+
+Sobre los mismos 20 accesos, el mapeo directo resuelve 7 aciertos y 13
+fallos (35\,\%), el por conjuntos 10 y 10 (50\,\%) y el total 13 y 7
+(65\,\%), como recogen la Tabla~\ref{tab:resultados} y la
+Fig.~\ref{fig:tasas}. El orden coincide con el que predicen los tres
+esquemas de mapeo \cite{stallings2019,null2024}: al pasar de una línea
+fija por bloque a dos vías por conjunto y de ahí a 16 líneas libres,
+los accesos que colisionaban dejan de hacerlo. La comparación es justa
+porque los tres mapeos comparten la misma memoria y el mismo arbitraje
+\emph{round-robin} (sección~\ref{sec:propuesta}), de modo que las
+diferencias proceden solo del reparto de direcciones \cite{patterson2017}.
+
+Los números no dependen de la inspección manual de las ondas: cada dato
+leído y cada resultado acierto/fallo se contrasta con un \texttt{assert}
+dentro de la simulación, y los totales de la tabla se verifican al
+final de la ejecución (sección~\ref{sec:propuesta}), de modo que un
+cambio de diseño que altere un solo acierto detiene la simulación.
+
+\subsection{Clasificación de los fallos}
+\label{sub:3c}
+
+Los tres mapeos comparten los mismos 7 fallos obligatorios: son las
+primeras visitas a los siete bloques distintos que toca la traza (las
+palabras 0, 1, 2, 3, 16, 17 y 32) y ninguna caché puede resolverlas sin
+cargar antes el bloque \cite{wikipedia-metrics,wikipedia-cache}. Tampoco
+hay fallos de capacidad, porque el conjunto de trabajo (7 bloques de
+4~B) cabe con holgura en las 16 líneas de 4~B de la caché
+\cite{wikipedia-metrics}. Por tanto, la diferencia observada
+--6, 3 y 0-- son fallos de conflicto: los que aparecen cuando un bloque
+legítimo no encuentra línea libre en su índice o en su conjunto
+\cite{wikipedia-metrics,stallings2019}. La Tabla~\ref{tab:resultados}
+desglosa los tres tipos, y su reparto explica por sí solo la tabla de
+acierto: los tres tipos suman siempre los 13, 10 y 7 fallos medidos.
+
+\subsection{Thrashing bajo control}
+
+En el mapeo directo cada bloque solo puede ocupar su línea
+$I = B \bmod 16$ \cite{stallings2019,wikipedia-cpu-cache}, y ahí se
+concentra el daño: las palabras 0, 16 y 32 (índice 0) y las 1 y 17
+(índice 1) compiten por una sola línea. Cinco de los seis fallos de
+conflicto del directo pertenecen al primer grupo (los accesos 5, 12,
+17, 18 y 19 de la traza) y el restante al segundo (acceso 10): cada
+lectura expulsa a la anterior, que volverá a fallar cuando se pida de
+nuevo. Es el patrón de \emph{thrashing} que Stallings ilustra tras la
+Fig.~5.8 de su cap.~5 \cite{stallings2019} y que la clasificación de 3C
+asocia a los fallos de conflicto \cite{wikipedia-metrics}; es también el
+punto en que la caché deja de compensar \cite{null2024}.
+
+El por conjuntos contiene el daño porque el conjunto 0 tiene dos vías:
+solo tres accesos (los 17--19) no encuentran sitio y el bit de LRU
+decide cuál de las dos palabras sale \cite{wikipedia-cpu-cache,hennessy2019}.
+La asociativa total no lo sufre: con 16 líneas libres, cualquier palabra
+encuentra hueco \cite{stallings2019}.
+
+El resultado depende de la traza, y conviene decirlo. Si esta
+alternara de forma exclusiva las palabras 0, 16 y 32, el mapeo directo
+no acertaría ningún acceso tras los obligatorios y el por conjuntos
+tampoco (tres palabras para dos vías con LRU es la secuencia clásica
+que agota el reemplazo), mientras que la asociativa total mantendría las
+tres residentes y solo pagaría sus tres primeros fallos. La traza real
+intercala el resto de direcciones y por eso las tasas se quedan en
+35--65\,\% en lugar de colapsar.
+
+\subsection{Latencia de acceso y tiempo medio}
+
+Los VCD permiten medir el tiempo que va desde que el banco emite
+\texttt{req} hasta que \texttt{ready} valida el dato: 30~ns (3 ciclos
+de reloj de 10~ns) cuando hay acierto y 60~ns (6 ciclos) cuando hay
+fallo, valores idénticos en los tres mapeos porque comparten la misma
+máquina de estados. La penalización de fallo es, por tanto,
+$P = 30$~ns. Con el ratio $h$ de cada mapeo, el tiempo medio de acceso
+queda
+\[
+  \mathrm{AMAT} \;=\; T_a + (1-h)\cdot P \,,
+\]
+con $T_a$ el tiempo de acierto; es la misma estructura que el tiempo
+medio $c + (1-h)\cdot m$ de Tanenbaum y Austin \cite{tanenbaum2013} y
+que los modelos de rendimiento de Stallings \cite{stallings2019} y de
+Null y Lobur \cite{null2024}.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\hline
+\noalign{\smallskip}
+ & $h$ & $1-h$ & $(1-h)\cdot P$ (ns) & AMAT (ns) \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+Directo & 0,35 & 0,65 & 19,5 & 49,5 \\
+Por conjuntos & 0,50 & 0,50 & 15,0 & 45,0 \\
+Total & 0,65 & 0,35 & 10,5 & 40,5 \\
+\noalign{\smallskip}\hline
+\end{tabular}
+\caption{Tiempo medio de acceso por mapeo con $T_a = 30$~ns y
+penalización de fallo $P = 30$~ns, medidos sobre los VCD.}
+\label{tab:amat}
+\end{table}
+
+Con $T_a = 30$~ns, la Tabla~\ref{tab:amat} muestra que la asociativa
+total ahorra 9~ns por acceso respecto a la directa (40,5 frente a
+49,5~ns: cada acceso tarda un 22\,\% más en el mapeo directo) y que el
+por conjuntos se queda a mitad de camino. Las duraciones de las tres
+simulaciones confirman la cuenta: la parte fija del banco (arranque y
+huecos entre accesos) es de 425~ns en los tres casos, de modo que
+$425 + 20 \times \mathrm{AMAT}$ reproduce exactamente los 1415, 1325 y
+1235~ns medidos en la Tabla~\ref{tab:resultados}.
+
+Conviene matizar que $T_a$ es igual para los tres por decisión de
+diseño: se comparan implementaciones funcionales, no silicio
+(sección~\ref{sec:propuesta}). En hardware real, resolver un acierto
+en la asociativa total exige comparar las 16 etiquetas en paralelo, con
+más área y más energía que el único comparador del mapeo directo
+\cite{hennessy2019,wikipedia-cpu-cache}; y como el AMAT tiende a $T_a$
+cuando $h$ se acerca a 1, a partir de cierto punto añadir
+asociatividad deja de rentabilizarse \cite{hennessy2019}.
+
+Como ejercicio de sensibilidad, si la penalización de fallo fuera de
+100~ns en lugar de 30~ns, el AMAT sería de 95, 80 y 65~ns: el mapeo
+directo tardaría un 46\,\% más por acceso que el total, frente al
+22\,\% del modelo de un ciclo. El orden no cambia, pero sí el valor en
+juego: cuanto más cara es la memoria, más pesa la tasa de fallos y más
+se justifica invertir en asociatividad \cite{hennessy2019}.
+
+\subsection{Del tipo de fallo al tiempo de simulación}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\hline
+\noalign{\smallskip}
+ & Todo acierto & Obligatorios & Conflicto & Total \\
+ & (ns) & (+ns) & (+ns) & (ns) \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+Directo & 1025 & 210 & 180 & 1415 \\
+Por conjuntos & 1025 & 210 & 90 & 1325 \\
+Total & 1025 & 210 & 0 & 1235 \\
+\noalign{\smallskip}\hline
+\end{tabular}
+\caption{Tiempo de simulación desglosado por tipo de fallo (parte fija
+de 425~ns más 600~ns si los 20 accesos acertaran todos).}
+\label{tab:desglose}
+\end{table}
+
+La Tabla~\ref{tab:desglose} lleva la clasificación de la
+sección~\ref{sub:3c} al tiempo: si los 20 accesos hubieran acertado,
+cada simulación habría durado 1025~ns (425~ns de arranque y huecos del
+banco, más 600~ns de 20 aciertos de 30~ns). A esa base, los 7 fallos
+obligatorios suman 210~ns en los tres mapeos, por igual, y los de
+conflicto añaden 180, 90 y 0~ns. Las columnas cuadran con los 1415,
+1325 y 1235~ns medidos: todo lo que una simulación tarda de más que
+otra procede de los fallos de conflicto que su reparto de direcciones
+provoca.
+
+\subsection{Alcance de la comparación}
+
+Los números describen esta traza y estos parámetros, no un rendimiento
+global: la traza se diseñó con localidad temporal y espacial y con un
+patrón deliberado de conflictos (sección~\ref{sec:propuesta}), la caché
+es de 64~B y la memoria de 1~KB, y no aparecen fallos de capacidad
+porque el conjunto de trabajo es pequeño. Con una traza más larga y
+variada, la componente de capacidad crecería y también penalizaría a la
+asociativa total \cite{bryant2015,patterson2017}. A ello se suma que
+todo el flujo es simulación funcional con GHDL, sin síntesis
+\cite{ghdl-docs}: los tiempos de esta sección son de simulación y de
+un modelo de memoria de un ciclo, no de un procesador real.
+
+A esto se suma que los parámetros elegidos condicionan el resultado: el
+bloque es de una sola palabra (4~B), de modo que cuatro palabras
+contiguas ocupan cuatro líneas distintas y no se aprovecha la localidad
+espacial dentro del bloque \cite{bryant2015,wikipedia-locality}, y con
+16 líneas el conjunto de trabajo cabe entero. Con bloques mayores o con
+menos líneas, el reparto de fallos sería distinto
+\cite{bryant2015,patterson2017}.
 
 % ============================================================
 % 6. CONCLUSIONES  (1 cuartilla)
@@ -473,8 +684,62 @@ observado, cumplimiento de las pruebas (assert). Interpretación crítica.
 \section{Conclusiones}
 \label{sec:conclusiones}
 
-Cierre: logros frente a los objetivos, limitaciones y trabajo futuro.
-(1 cuartilla.)
+\textbf{Logros frente a los objetivos.} Este trabajo se marcó dos
+objetivos (sección~\ref{sec:intro}): comprobar por simulación el
+comportamiento teórico de cada mapeo y cuantificar sus diferencias
+sobre una carga común, y ambos se cumplen. Se implementaron en
+VHDL-2008 la memoria principal y
+los tres mapeos de caché con una interfaz común, y cinco bancos de
+prueba con autochequeo verifican cada dato leído, cada resultado
+acierto/falto y los totales de la traza. En condiciones idénticas
+(misma traza, misma memoria, mismo arbitraje), la tasa de aciertos
+resultante es de 35\,\% en el mapeo directo, 50\,\% en el por conjuntos
+y 65\,\% en el asociativo total, con un tiempo medio de acceso de 49,5,
+45,0 y 40,5~ns respectivamente: los 6, 3 y 0 fallos de conflicto son la
+única diferencia entre ellos, ya que los 7 fallos obligatorios y los
+fallos de capacidad son comunes.
+
+\textbf{Cuándo conviene cada mapeo.} El mapeo directo sigue siendo la
+opción cuando mandan la simplicidad, el coste y un tiempo de acierto
+bajo y previsible, por ejemplo en cachés pequeñas o en los primeros
+niveles de una jerarquía modesta \cite{stallings2019,null2024}. El
+asociativo por conjuntos es el compromiso habitual: con solo dos vías y
+un bit de LRU por conjunto recupera buena parte de los aciertos
+perdidos --en nuestra traza, 3 de los 6 fallos de conflicto-- a un
+coste muy superior al del directo \cite{hennessy2019,wikipedia-cpu-cache}.
+El asociativo total es el que más aciertos obtiene y conviene cuando el
+presupuesto de tiempo, área y energía lo permite, porque exige
+comparar todas las etiquetas en paralelo \cite{hennessy2019}.
+
+\textbf{Limitaciones.} La caché es de solo lectura: no hay bit de
+suciedad ni política de escritura, de modo que no se observan
+invalidaciones ni actualizaciones \cite{bryant2015,wikipedia-cache-computing}.
+Los tamaños (64~B de caché frente a 1~KB de memoria) y la traza de
+20 accesos son pequeños para observar fallos de capacidad, y la
+memoria de comportamiento tiene una latencia de un ciclo. Por último,
+GHDL se usa como simulador --el backend mcode del equipo no permite
+síntesis \cite{ghdl-docs}--: los resultados son funcionales, no de
+silicio.
+
+\textbf{Trabajo futuro.} Los siguientes pasos naturales son: incorporar
+el bit de suciedad con las políticas \emph{write-through} y
+\emph{write-back} \cite{wikipedia-cache-computing,bryant2015,stallings2019};
+añadir un segundo nivel de caché para estudiar una jerarquía real
+\cite{tanenbaum2013}; sustituir LRU por aproximaciones cuando crezca la
+asociatividad, como FIFO, aleatorio o pseudo-LRU \cite{hennessy2019};
+y ejecutar trazas de programas reales, más largas y con más bloques
+destinados a hacer aparecer los fallos de capacidad
+\cite{patterson2017,bryant2015}. Ampliar también la comparación a más
+configuraciones --distinto número de vías y de líneas-- para obtener la
+curva de asociatividad frente a tasa de aciertos \cite{bryant2015}.
+
+\textbf{Reproducibilidad.} Todo el experimento se repite con los
+wrappers del repositorio: \texttt{scripts/\allowbreak vhdl-sim}
+vuelve a generar los cinco resultados y
+\texttt{scripts/\allowbreak latexbuild} recompone este informe, mientras
+la integración continua ejecuta los cinco bancos en
+cada \emph{pull request}. Los valores de este artículo no dependen,
+por tanto, de una ejecución aislada, sino del propio código.
 
 % ============================================================
 % REFERENCIAS  (>= 15 — indicar exactamente dónde aparece el texto)
