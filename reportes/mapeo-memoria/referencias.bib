@@ -13,6 +13,157 @@
 %   note   = {cap. 4, p. 123 — frase sobre pipeline de etapas}
 % ============================================================
 
+% ------------------------------------------------------------
+% LIBROS
+% ------------------------------------------------------------
+
+% Marco teórico: localidad, los tres mapeos, reemplazo, rendimiento y
+% el Ejemplo 5.1 del que se reescalan los parámetros del trabajo.
+% Ubicación verificada sobre el índice del propio libro (11.ª ed.).
+@book{stallings2019,
+  author    = {Stallings, William},
+  title     = {Computer Organization and Architecture: Designing for Performance},
+  publisher = {Pearson},
+  edition   = {11},
+  year      = {2019},
+  isbn      = {978-0-13-499719-3},
+  note      = {cap. 4 ``The Memory Hierarchy: Locality and Performance'', \S4.1 ``Principle of Locality'' (localidad temporal y espacial); cap. 5 ``Cache Memory'', pp. 138-176: \S5.1 ``Cache Memory Principles'' (p. 139), \S5.2 ``Elements of Cache Design'' (pp. 143-164) con las subsecciones ``Mapping Function'' (fórmula i = j mod m), ``Direct Mapping'' (con thrashing tras la Fig. 5.8 y los Ejemplos 5.1a, 5.1b y 5.1c de los tres mapeos; el Ejemplo 5.1 usa caché de 64 kB, memoria de 16 MB, bloques de 4 B y dirección de 24 bits), ``Associative Mapping'', ``Set-Associative Mapping'', ``Replacement Algorithms'' y ``Write Policy'', y \S5.5 ``Cache Performance Models'' (p. 169)}
+}
+
+% Jerarquía de memoria, coste de la asociatividad y reemplazo (LRU y sus
+% aproximaciones). Ubicación verificada sobre el índice y el texto del libro.
+@book{hennessy2019,
+  author    = {Hennessy, John L. and Patterson, David A.},
+  title     = {Computer Architecture: A Quantitative Approach},
+  publisher = {Morgan Kaufmann},
+  edition   = {6},
+  year      = {2019},
+  isbn      = {978-0-12-811905-1},
+  note      = {cap. 2 ``Memory Hierarchy Design'': \S2.1 ``Introduction'' (p. 78, jerarquía de memoria) y \S2.3 ``Ten Advanced Optimizations of Cache Performance'' (p. 94, compromiso entre asociatividad, tiempo de acceso y energía; Figs. 2.8 y 2.9); Appendix B ``Review of Memory Hierarchy'', \S{}B.1 ``Introduction'', pp. B-8-B-10: Q1 (colocación directa/por conjuntos/total y (Block address) MOD (Number of sets)), Q2 (reparto tag-índice-offset de la Fig. B.3) y Q3 (reemplazo aleatorio, LRU y FIFO, con la nota de que LRU se vuelve caro y se aproxima con pseudo-LRU)}
+}
+
+% Localidad y organización de la caché desde el punto de vista del
+% programador. Ubicación verificada sobre el índice del propio libro.
+@book{patterson2017,
+  author    = {Patterson, David A. and Hennessy, John L.},
+  title     = {Computer Organization and Design: The Hardware/Software Interface, {RISC-V} Edition},
+  publisher = {Morgan Kaufmann},
+  edition   = {5},
+  year      = {2017},
+  isbn      = {978-0-12-812275-4},
+  note      = {cap. 5 ``Large and Fast: Exploiting Memory Hierarchy'': \S5.1 ``Introduction'' (p. 366, principio de localidad y jerarquía de memoria), \S5.2 ``Memory Technologies'' (p. 370), \S5.3 ``The Basics of Caches'' (p. 375, organización de la caché, mapeo y medición del rendimiento) y \S5.4 ``Measuring and Improving Cache Performance'' (p. 390)}
+}
+
+% Localidad y parámetros de la caché (secciones 6.2-6.4).
+@book{bryant2015,
+  author    = {Bryant, Randal E. and O'Hallaron, David R.},
+  title     = {Computer Systems: A Programmer's Perspective},
+  publisher = {Pearson},
+  edition   = {3},
+  year      = {2015},
+  isbn      = {978-0-13-409266-9},
+  note      = {cap. 6 ``The Memory Hierarchy'' (estructura de secciones tomada del índice de la edición Global, ISBN 978-1-292-10177-4): \S6.2 ``Locality'' (6.2.1 ``Locality of References to Program Data'', 6.2.2 ``Locality of Instruction Fetches'' y 6.2.3 ``Summary of Locality''), \S6.3 ``The Memory Hierarchy'' (6.3.1 ``Caching in the Memory Hierarchy'') y \S6.4 ``Cache Memories'' (6.4.1 ``Generic Cache Memory Organization'', 6.4.2 ``Direct-Mapped Caches'', 6.4.3 ``Set Associative Caches'', 6.4.4 ``Fully Associative Caches'', 6.4.5 ``Issues with Writes'' y 6.4.7 ``Performance Impact of Cache Parameters'')}
+}
+
+% Brecha CPU-memoria, ratio de aciertos y jerarquía de 5 niveles.
+% Ubicación verificada sobre el índice y el texto del propio libro.
+@book{tanenbaum2013,
+  author    = {Tanenbaum, Andrew S. and Austin, Todd},
+  title     = {Structured Computer Organization},
+  publisher = {Pearson},
+  edition   = {6},
+  year      = {2013},
+  isbn      = {978-0-13-291652-3},
+  note      = {\S2.2.5 ``Cache Memory'', pp. 82-84 (brecha entre CPU y memoria, principio de localidad, ratio de aciertos h, tiempo medio de acceso = c + (1-h){\textperiodcentered}m y líneas de caché) y \S2.3.1 ``Memory Hierarchies'', pp. 86-87 (jerarquía de cinco niveles: registros, caché, memoria principal, discos y cinta con los tres parámetros que varían al descender)}
+}
+
+% Los tres esquemas de mapeo, las políticas de reemplazo y el tiempo
+% efectivo de acceso. Ubicación verificada sobre el índice del libro.
+@book{null2024,
+  author    = {Null, Linda and Lobur, Julia},
+  title     = {The Essentials of Computer Organization and Architecture},
+  publisher = {Jones \& Bartlett Learning},
+  edition   = {6},
+  year      = {2024},
+  isbn      = {978-1-284-25943-8},
+  note      = {cap. 6 ``Memory'' (p. 363): \S6.3 ``The Memory Hierarchy'' (p. 365) y \S6.3.1 ``Locality of Reference'' (p. 368); \S6.4 ``Cache Memory'' (p. 368) con \S6.4.1 ``Cache Mapping Schemes'' (p. 371, mapeo directo, asociativo y por conjuntos), \S6.4.2 ``Replacement Policies'' (p. 386), \S6.4.3 ``Effective Access Time and Hit Ratio'' (p. 389), \S6.4.4 ``When Does Caching Break Down?'' (p. 390) y \S6.4.5 ``Cache Write Policies'' (p. 391)}
+}
+
+% ------------------------------------------------------------
+% ENCICLOPEDIA EN LÍNEA (Wikipedia)
+% ------------------------------------------------------------
+
+% Definición de función de mapeo, políticas de la caché y tipos de fallo.
+@misc{wikipedia-cache,
+  author       = {{Wikipedia, la enciclopedia libre}},
+  title        = {Caché (informática)},
+  howpublished = {\url{https://es.wikipedia.org/wiki/Caché_(informática)}},
+  year         = {2026},
+  note         = {secciones ``Diseño'' (con las subsecciones ``Política de ubicación'', ``Política de reemplazo'' y ``Política de actualización o escritura'') y ``Optimización'', dentro de ``Reducción de fallos'', la subsección ``Tipos de fallos''; última edición del artículo: 2026-07-31; consulta: 2026-10-17}
+}
+
+% Asociatividad, ecuación del mapeo directo y LRU de 1 bit por vía.
+@misc{wikipedia-cpu-cache,
+  author       = {{Wikipedia, the free encyclopedia}},
+  title        = {{CPU cache}},
+  howpublished = {\url{https://en.wikipedia.org/wiki/CPU_cache}},
+  year         = {2026},
+  note         = {secciones ``Associativity'' (directo, N-way set associative y su compromiso), ``Direct-mapped cache'' (ecuación x = y mod n), ``Two-way set associative cache'' (LRU con un bit por par de vías) y ``Cache entry structure'' (reparto tag-índice-block offset de la dirección); última edición del artículo: 2026-09-26; consulta: 2026-10-17}
+}
+
+% Politica LRU y tiempo medio de acceso a memoria.
+@misc{wikipedia-replacement,
+  author       = {{Wikipedia, the free encyclopedia}},
+  title        = {{Cache replacement policies}},
+  howpublished = {\url{https://en.wikipedia.org/wiki/Cache_replacement_policies}},
+  year         = {2026},
+  note         = {sección ``Least Recently Used (LRU)'' (definición y ejemplo de acceso A B C D E D F) y el apartado ``Overview'', con la fórmula de la average memory reference time y la relación entre ratio de aciertos, latencia y coste de actualización; última edición del artículo: 2026-09-22; consulta: 2026-10-17}
+}
+
+% Localidad temporal y espacial y jerarquia de memoria.
+@misc{wikipedia-locality,
+  author       = {{Wikipedia, the free encyclopedia}},
+  title        = {{Locality of reference}},
+  howpublished = {\url{https://en.wikipedia.org/wiki/Locality_of_reference}},
+  year         = {2026},
+  note         = {secciones ``Types of locality'' (localidad temporal y espacial) y ``Hierarchical memory'' (motivo de la jerarquía de memoria); última edición del artículo: 2026-06-17; consulta: 2026-10-17}
+}
+
+% Clasificacion de fallos (3C) y AMAT, para el analisis de resultados.
+@misc{wikipedia-metrics,
+  author       = {{Wikipedia, the free encyclopedia}},
+  title        = {{Cache performance measurement and metric}},
+  howpublished = {\url{https://en.wikipedia.org/wiki/Cache_performance_measurement_and_metric}},
+  year         = {2025},
+  note         = {secciones ``Introduction to types of cache misses'', ``Compulsory misses'', ``Conflict misses'' (fallo por conflicto, el que provoca el thrashing), ``Capacity misses'' y ``Average memory access time''; última edición del artículo: 2025-12-03; consulta: 2026-10-17}
+}
+
+% Motivacion, operacion y politicas de escritura (trabajo futuro).
+@misc{wikipedia-cache-computing,
+  author       = {{Wikipedia, the free encyclopedia}},
+  title        = {{Cache (computing)}},
+  howpublished = {\url{https://en.wikipedia.org/wiki/Cache_(computing)}},
+  year         = {2026},
+  note         = {secciones ``Motivation'', ``Operation'' y ``Write policies'' (write-through y write-back, la política que este trabajo deja fuera); última edición del artículo: 2026-09-30; consulta: 2026-10-17}
+}
+
+% ------------------------------------------------------------
+% ESTÁNDAR DE LENGUAJE
+% ------------------------------------------------------------
+
+% Lenguaje VHDL-2008 empleado en las descripciones.
+@misc{ieee1076,
+  author       = {{IEEE}},
+  title        = {{IEEE Std 1076-2008}: {IEEE Standard} for {VHDL} Language Reference Manual},
+  howpublished = {\url{https://standards.ieee.org/standard/1076-2008.html}},
+  year         = {2008},
+  note         = {resumen del estándar (VHDL como notación formal para creación, verificación, simulación y pruebas de diseños, y para el mantenimiento de los datos de diseño) y ficha técnica ``Published: 2009-01-26'', ``ANSI Approved: 2009-02-10'', ``Superseded by 1076-2019''; consulta: 2026-10-17}
+}
+
+% ------------------------------------------------------------
+% HERRAMIENTAS
+% ------------------------------------------------------------
+
 % Herramienta de simulación del curso. Ubicación del texto usado:
 % secciones "Overview" y "Getting Started" de la documentación oficial.
 % Fecha de consulta: 2026-10-17.
@@ -22,6 +173,24 @@
   howpublished = {\url{https://ghdl.github.io/ghdl/}},
   year         = {2026},
   note         = {secciones ``Overview'' y ``Getting Started''; consulta: 2026-10-17}
+}
+
+% Fases de trabajo con GHDL que replica el wrapper scripts/vhdl-sim.
+@misc{ghdl-invoking,
+  author       = {{GHDL developers}},
+  title        = {{Invoking} {GHDL}},
+  howpublished = {\url{https://ghdl.github.io/ghdl/using/InvokingGHDL.html}},
+  year         = {2026},
+  note         = {secciones ``Design building commands'' (``Analysis [-a]'', ``Elaboration [-e]'' y ``Run [-r]'') y ``Options'' (entre ellas --std y --workdir); consulta: 2026-10-17}
+}
+
+% Volcado de ondas a VCD, origen de las capturas de la seccion 4.
+@misc{ghdl-simulation,
+  author       = {{GHDL developers}},
+  title        = {{Simulation (runtime)}},
+  howpublished = {\url{https://ghdl.github.io/ghdl/using/Simulation.html}},
+  year         = {2026},
+  note         = {secciones ``Simulation options'' y ``Export waveforms'' (opción --vcd <FILENAME>, que vuelca los valores de las señales antes de cada ciclo no delta); consulta: 2026-10-17}
 }
 
 % Visor de ondas usado para las capturas. Ubicación del texto usado:
