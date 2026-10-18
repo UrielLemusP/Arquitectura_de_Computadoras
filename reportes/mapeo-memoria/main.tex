@@ -34,9 +34,10 @@
 \begin{document}
 
 % ============================================================
-% TÍTULO Y AUTORES  (rellenar: los 5 integrantes del equipo)
+% TÍTULO Y AUTORES  (los 5 integrantes del equipo — por rellenar)
 % ============================================================
-\title{TÍTULO DEL REPORTE (mapeo-memoria)}
+\title{Comparación de las funciones de mapeo de la memoria caché\\
+mediante simulación VHDL}
 
 \author{Nombre Apellido$^{1}$,%
 \and Nombre Apellido$^{1}$,%
@@ -55,13 +56,19 @@ Universidad, Ciudad, País\\
 % RESUMEN  (< 100 palabras — fuente 9pt con sangría, estilo llncs)
 % ============================================================
 \begin{abstract}
-Resumen. Escribe aquí la síntesis del trabajo en \textbf{menos de 100
-palabras}: objetivo, metodología (GHDL/GTKWave, VHDL-2008) y resultado
-principal.
+Resumen. Se comparan mediante simulación VHDL-2008 las tres funciones
+de mapeo de la memoria caché: directo, asociativo total y asociativo
+por conjuntos. Las tres cachés comparten interfaz, memoria principal
+y una traza de 20 accesos con un patrón de thrashing, de modo que la
+comparación es justa. Las simulaciones se ejecutan con GHDL y las
+ondas se inspeccionan con GTKWave. En la traza común la caché directa
+alcanza 35\,\% de aciertos, la por conjuntos 50\,\% y la asociativa
+total 65\,\%, resultados coherentes con el coste y la complejidad de
+cada mapeo.
 \end{abstract}
 
-\noindent\textbf{Palabras Clave:} Arquitectura de Computadoras, Datapath,
-VHDL, Simulación, GHDL
+\noindent\textbf{Palabras Clave:} Memoria caché, Mapeo directo,
+Asociativo por conjuntos, VHDL, GHDL, Simulación
 
 % ============================================================
 % 1. INTRODUCCIÓN  (1–2 cuartillas)
@@ -69,8 +76,51 @@ VHDL, Simulación, GHDL
 \section{Introducción}
 \label{sec:intro}
 
-Contexto, motivación y objetivo del trabajo. Indica la estructura del
-artículo. (1--2 cuartillas.)
+La memoria principal es mucho más lenta que el procesador: cerrar una
+brecha de este tipo es el motivo de existir de la jerarquía de
+memoria, y la caché es su primer y más efectivo nivel
+\cite{stallings2021,hennessy2019}. Una caché aprovecha los principios
+de localidad temporal y espacial para guardar en un almacenamiento
+rápido y pequeño una copia de los bloques que el procesador usa con
+más frecuencia \cite{patterson2021,bryant2015}.
+
+Cuando se diseña una caché hay que decidir, para cada bloque de la
+memoria principal, qué línea de la caché puede alojarlo. Esa decisión
+es la \emph{función de mapeo}, y existen tres básicos: mapeo directo
+(\emph{direct mapping}), mapeo asociativo total (\emph{associative
+mapping}) y mapeo asociativo por conjuntos (\emph{set-associative
+mapping}) \cite{stallings2021,wikipedia-cache}. Cada uno compromete
+distinto hardware de comparación y distinta flexibilidad de
+reemplazo, de modo que ninguna opción es \emph{a priori} mejor que
+las otras: dependen del patrón de accesos.
+
+Este trabajo construye y compara las tres funciones de mapeo en el
+mismo entorno de simulación. Las tres cachés están descritas en
+VHDL-2008, se simulan con GHDL~\cite{ghdl-docs} y sus ondas se
+inspeccionan con GTKWave~\cite{gtkwave-docs}. Para que la comparación
+sea justa, los tres módulos exponen \emph{la misma interfaz}, leen de
+\emph{la misma memoria principal de comportamiento} y ejecutan
+\emph{la misma traza de accesos}, que incluye un patrón de
+\emph{thrashing} típico del mapeo directo. El objetivo es doble:
+(i) comprobar por simulación el comportamiento teórico de cada
+mapeo, y (ii) cuantificar sus diferencias en aciertos y fallos sobre
+una carga común.
+
+Desde el punto de vista didáctico conviene aclarar la terminología. El
+equipo denomina a los tres métodos «directo», «asociativo» y
+«asociativo por conjuntos», siguiendo la descripción de funcionamiento
+del laboratorio (búsqueda lineal de instrucciones, uso de etiquetas
+con comparación en paralelo y división en conjuntos); en la
+bibliografía se usa la terminología estándar de Stallings, que es la
+que se emplea en el resto del artículo \cite{stallings2021}.
+
+El artículo se estructura como sigue. La sección~\ref{sec:diseno}
+describe las tres funciones de mapeo y los módulos VHDL. La
+sección~\ref{sec:propuesta} presenta la metodología experimental. La
+sección~\ref{sec:simulaciones} muestra las capturas de las
+simulaciones, la sección~\ref{sec:resultados} analiza los resultados
+cuantitativos y la sección~\ref{sec:conclusiones} concluye y señala
+trabajos futuros.
 
 % ============================================================
 % 2. DISEÑO TEÓRICO  (3–5 cuartillas)
@@ -78,8 +128,129 @@ artículo. (1--2 cuartillas.)
 \section{Diseño Teórico}
 \label{sec:diseno}
 
-Marco teórico, arquitectura del datapath, descripción de los módulos VHDL
-(entidades, registros, ALU, buses) y decisiones de diseño. (3--5 cuartillas.)
+\subsection{Contexto: memoria caché y bloques}
+
+Una caché organiza la memoria principal en \emph{bloques} (o
+líneas) de varios bytes y guarda esos bloques en sus \emph{líneas}.
+En este trabajo se usan los parámetros del mini-ejemplo del capítulo
+5 de Stallings \cite{stallings2021}: direccionamiento a nivel de byte
+con direcciones de 10 bits, palabra y bloque de 4 bytes (por tanto 2
+bits de offset), memoria principal de 1\,KiB (256 bloques) y caché de
+64\,B (16 líneas). La Tabla~\ref{tab:par} recoge los parámetros y el
+reparto de bits de la dirección de cada mapeo.
+
+\begin{table}[t]
+\centering
+\caption{Parámetros comunes y reparto de la dirección (10 bits).}
+\label{tab:par}
+\small
+\begin{tabular}{llll}
+\hline\noalign{\smallskip}
+Parámetro & Valor & Mapeo & Reparto de bits\\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+Dirección & 10 bits (byte) & Directo & tag(4) $\vert$ índice(4) $\vert$ offset(2)\\
+Palabra/bloque & 4 bytes & Asociativo & tag(8) $\vert$ offset(2)\\
+Mem. principal & 1\,KiB (256 bloques) & Conjuntos & tag(5) $\vert$ conjunto(3) $\vert$ offset(2)\\
+Caché & 64\,B (16 líneas) & & \\
+\noalign{\smallskip}\hline
+\end{tabular}
+\end{table}
+
+\subsection{Mapeo directo}
+
+En el mapeo directo cada bloque solo puede ocupar una única línea de
+la caché: la línea $i$ del bloque se calcula como $i = j \bmod m$,
+donde $j$ es el número de bloque en memoria y $m$ el número de líneas
+de la caché \cite{stallings2021}. En nuestro caso $m=16$, así que el
+índice son los 4 bits intermedios de la dirección y los 4 bits
+superiores quedan como etiqueta (\emph{tag}) que debe guardarse y
+compararse. La búsqueda consiste en un único comparador de 4 bits
+sobre la línea seleccionada por el índice, por lo que es el mapeo más
+barato y rápido: no hay que recorrer la caché ni decidir víctima.
+
+Su inconveniente es estructural: dos bloques con el mismo índice
+interfieren siempre, y si un programa alterna accesos a dos bloques
+que comparten índice, cada acceso es un fallo: es el fenómeno de
+\emph{thrashing} \cite{stallings2021,wikipedia-cache}. La traza de
+este trabajo está diseñada para provocarlo con las palabras 0, 16 y
+32, que comparten índice.
+
+\subsection{Mapeo asociativo total}
+
+En el mapeo asociativo total cualquier bloque puede ocupar
+cualquiera de las líneas \cite{stallings2021}. La dirección se
+divide solo en etiqueta (8 bits) y offset, y la caché guarda la
+etiqueta de cada línea: en el ciclo de comparación se comparan
+\emph{en paralelo} las 16 etiquetas con la solicitada. Esto requiere
+16 comparadores de 8 bits y una red de selección (la estructura
+clásica es una memoria de contenido o \emph{CAM}, \emph{content
+addressable memory}) \cite{stallings2021,hennessy2019}. El
+inconveniente es el coste y la potencia de los comparadores en
+paralelo; la ventaja es que un bloque nunca expulsa a otro por
+colisión de índice: solo sale de la caché cuando hace falta espacio y
+se elige una víctima con una política de reemplazo, aquí LRU
+(\emph{least recently used}) \cite{stallings2021}.
+
+\subsection{Mapeo asociativo por conjuntos}
+
+El mapeo por conjuntos es el punto intermedio \cite{stallings2021}.
+La caché se divide en conjuntos de $k$ líneas (\emph{$k$-way
+set-associative}), y un bloque solo puede ocupar cualquiera de las
+$k$ líneas de \emph{su} conjunto; dentro del conjunto la elección es
+libre. Con $k=1$ se obtiene el mapeo directo y con $k=m$ el asociativo
+total \cite{stallings2021,patterson2021}. En nuestro caso hay 8
+conjuntos de 2 vías, de modo que la dirección se reparte en etiqueta
+(5 bits), conjunto (3 bits) y offset, y solo hacen falta 2
+comparadores de 5 bits por acceso. El reemplazo es LRU con 1 bit por
+conjunto: se recuerda cuál de las dos vías se usó más recientemente y
+la víctima es la otra.
+
+\subsection{Reemplazo LRU}
+
+Las cachés asociativas necesitan una política de reemplazo. Se ha
+elegido LRU, que descarta el bloque hace más tiempo sin usar y que
+aprovecha mejor la localidad temporal que políticas aleatorias o FIFO
+\cite{stallings2021,hennessy2019}. La caché totalmente asociativa
+implementa LRU exacto con un contador de antigüedad por línea (0 =
+más reciente), y la por conjuntos implementa LRU exacto con 1 bit por
+conjunto al tener solo dos vías. En un diseño real el LRU exacto de
+16 vías no es barato y se sustituye por aproximaciones
+\cite{hennessy2019}; aquí se justifica por tratarse de un modelo de
+simulación de tamaño reducido.
+
+\subsection{Decisiones de diseño y módulos VHDL}
+
+Las decisiones de diseño, todas ellas dirigidas a que la comparación
+sea justa, son:
+\begin{itemize}
+  \item \textbf{Misma interfaz.} Los tres cachés exponen los mismos
+    puertos (\texttt{clk}, \texttt{rst}, \texttt{addr}, \texttt{req},
+    \texttt{ready}, \texttt{data}, \texttt{hit}, \texttt{estado} y la
+    interface de memoria \texttt{mem\_addr}, \texttt{mem\_req},
+    \texttt{mem\_data}, \texttt{mem\_ready}), de modo que el banco de
+    pruebas y la memoria son intercambiables.
+  \item \textbf{Solo lectura.} Se modela el \emph{fetch} de
+    instrucciones: no hay bit sucio (\emph{dirty}) ni política de
+    escritura, que queda como trabajo futuro (sección~\ref{sec:conclusiones}).
+  \item \textbf{Máquina de estados común.}
+    $\texttt{IDLE} \rightarrow \texttt{COMPARE} \rightarrow
+    (\texttt{FETCH\_MEM} \rightarrow \texttt{DONE}) \mid
+    \texttt{DONE}$: se compara, y solo en caso de fallo se pide el
+    bloque a la memoria principal, que tiene una latencia de 1 ciclo
+    (modelo de comportamiento).
+  \item \textbf{Misma memoria principal.} RAM de comportamiento de
+    1\,KiB inicializable con un patrón determinista, compartida por
+    los bancos de prueba.
+\end{itemize}
+
+Los módulos de \texttt{vhdl/mapeo-memoria/src/} son
+\texttt{memoria\_principal} (RAM de 256 palabras de 32 bits con
+latencia de 1 ciclo y puerto de escritura para los bancos de prueba),
+\texttt{cache\_directo} (1 comparador de 4 bits, sin reemplazo),
+\texttt{cache\_asociativa} (16 comparadores de 8 bits en paralelo,
+contadores LRU) y \texttt{cache\_conjuntos} (2 comparadores de 5
+bits, LRU de 1 bit por conjunto). El código completo está en el
+apéndice.
 
 % ============================================================
 % 3. PROPUESTA EXPERIMENTAL  (1 hoja)
@@ -132,7 +303,7 @@ Cierre: logros frente a los objetivos, limitaciones y trabajo futuro.
 % ============================================================
 % IMPORTANTE: cada referencia debe permitir ubicar exactamente dónde
 % aparece el texto sugerido (capítulo/§/página, o URL + fecha de consulta).
-% Anota la ubicación en un comentario % justo debajo de la entrada.
+% Anota la ubicación en el campo note de la entrada.
 \bibliographystyle{splncs04}
 \bibliography{referencias}
 
