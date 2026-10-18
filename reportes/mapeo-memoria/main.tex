@@ -40,6 +40,18 @@
 }
 \lstset{style=vhdl}
 
+% ---- Estilo para bloques de comandos del repositorio (sección 3) ----
+\lstdefinestyle{shell}{
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{black},
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{black},
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{black}
+}
+
 \begin{document}
 
 % ============================================================
@@ -275,11 +287,88 @@ apéndice.
 \section{Propuesta Experimental}
 \label{sec:propuesta}
 
-Metodología: herramientas de simulación (GHDL~\cite{ghdl-docs}, sus
-fases de análisis, elaboración y ejecución~\cite{ghdl-invoking} con
-volcado de ondas~\cite{ghdl-simulation}, GTKWave~\cite{gtkwave-docs}),
-estándar VHDL-2008, bancos
-de prueba, variables y procedimiento de evaluación. (1 hoja.)
+\subsection{Entorno de simulación}
+
+Las descripciones están escritas en VHDL-2008~\cite{ieee1076} y se
+verifican por simulación funcional con GHDL~\cite{ghdl-docs}, un
+simulador libre y multiplataforma que se emplea en tres
+fases~\cite{ghdl-invoking}: \emph{análisis} (\texttt{-a}) del código
+fuente, \emph{elaboración} (\texttt{-e}) del diseño y \emph{ejecución}
+(\texttt{-r}) del banco de prueba. Durante la ejecución puede volcarse
+el valor de todas las señales en un fichero~VCD~\cite{ghdl-simulation},
+que después se inspecciona con GTKWave~\cite{gtkwave-docs}. En este
+trabajo la cadena se ejecuta siempre mediante los \emph{wrappers} del
+repositorio, que fijan las opciones de compilación (VHDL-2008,
+biblioteca de trabajo y rutas de salida):
+
+\begin{lstlisting}[style=shell]
+scripts/vhdl-analizar mapeo-memoria
+scripts/vhdl-sim     mapeo-memoria tb_cache_directo
+scripts/vhdl-wave    vhdl/mapeo-memoria/salidas/tb_cache_directo.vcd
+\end{lstlisting}
+
+\subsection{Bancos de prueba}
+
+La unidad se verifica con cinco bancos de prueba, todos con
+\emph{autochequeo}: cada comprobación es un \texttt{assert} que, si no
+se cumple, detiene la simulación con \texttt{severity failure} y
+describe el problema, y al finalizar cada banco se emite un
+\texttt{report} de éxito del tipo
+\texttt{"tb\_cache\_directo:\ OK"}. GHDL devuelve un código de salida
+distinto de cero cuando un aserto falla, de modo que la integración
+continua del repositorio (que analiza y simula los cinco bancos en
+cada \emph{pull request}) detecta cualquier regresión.
+Tabla~\ref{tab:bancos} resume qué comprueba cada uno.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\hline
+\noalign{\smallskip}
+Banco de prueba & Qué verifica \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+\texttt{tb\_memoria\_principal} & patrón de fábrica, puerto de \\
+ & escritura y palabras vecinas \\
+\texttt{tb\_cache\_directo} & dato y acierto/fallo por acceso; \\
+ & totales 7 aciertos / 13 fallos \\
+\texttt{tb\_cache\_asociativa} & ídem; totales 13 aciertos / 7 fallos \\
+\texttt{tb\_cache\_conjuntos} & ídem; totales 10 aciertos / 10 fallos \\
+\texttt{tb\_comparacion\_mapeos} & los tres mapeos sobre una \\
+ & memoria compartida; tabla comparativa \\
+\noalign{\smallskip}\hline
+\end{tabular}
+\caption{Bancos de prueba de la unidad \texttt{mapeo-memoria}.}
+\label{tab:bancos}
+\end{table}
+
+Los tres bancos de caché ejecutan la misma traza, y el cuarto
+banco (\texttt{tb\_\allowbreak comparacion\_\allowbreak mapeos})
+instancia las tres cachés sobre una
+\emph{única} memoria de comportamiento, compartida mediante un
+arbitraje \emph{round-robin} registrado (una concesión por ciclo), de
+modo que las diferencias observadas se deben solo al mapeo y no al
+modelo de memoria.
+
+\subsection{Traza común y métricas}
+
+La traza tiene 20 accesos y combina localidad temporal y espacial con
+un patrón deliberado de \emph{thrashing}: las palabras 0, 16 y 32
+(direcciones byte 0, 64 y 128) compiten por la misma línea en el mapeo
+directo y por el mismo conjunto en el mapeo por conjuntos. Cada acceso
+se contrasta con el resultado teórico: el dato devuelto debe coincidir
+con el patrón de fábrica de la memoria (palabra $i = 3i+7$) y el
+acierto o fallo debe coincidir con el patrón esperado del banco. La
+métrica de referencia es la tasa de aciertos $h$, calculada como el
+número de aciertos dividido entre 20, y, por complemento, la tasa de
+fallos $1-h$.
+
+Conviene acotar el alcance de la comparación: es \emph{funcional}, en
+el sentido de que compara aciertos y fallos sobre la misma traza y el
+mismo modelo de memoria, de latencia de un ciclo. No se mide el
+tiempo de ejecución en un procesador real y no se contempla síntesis:
+GHDL se usa como simulador, y la verificación sigue el flujo habitual
+del proyecto (análisis, elaboración, ejecución y revisión de ondas).
 
 % ============================================================
 % 4. SIMULACIONES DE VHDL  (capturas de los módulos más importantes)
@@ -334,7 +423,8 @@ Cierre: logros frente a los objetivos, limitaciones y trabajo futuro.
 \label{app:codigo}
 
 Código completo de los módulos de la unidad (copiado de
-\texttt{vhdl/mapeo-memoria/src/}). Usa \texttt{lstlisting}:
+\texttt{vhdl/\allowbreak mapeo-\allowbreak memoria/\allowbreak
+src/}). Usa \texttt{lstlisting}:
 
 % Sustituye por el código real de cada módulo de la unidad.
 % \begin{lstlisting}[caption={sumador.vhd --- <descripción>}, label=lst:sumador]
