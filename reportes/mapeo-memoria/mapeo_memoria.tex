@@ -475,6 +475,12 @@ Los cinco bancos terminan con su mensaje de \texttt{OK} sin disparar
 ninguna aserción (Tabla~\ref{tab:bancos}). Las figuras son capturas de
 GTKWave sobre los ficheros~VCD de \texttt{vhdl/mapeo-memoria/salidas/},
 con la traza completa a la vista (0~ns hasta el final de la simulación).
+Cada captura expone las filas del banco: \texttt{clk}, \texttt{rst},
+el contador de \texttt{ciclo}, el estímulo (\texttt{addr}, \texttt{req}),
+la respuesta (\texttt{ready}, \texttt{hit}, \texttt{data}, \texttt{estado})
+y los contadores de aciertos y fallos
+(\texttt{caches\_\allowbreak hits}, \texttt{caches\_\allowbreak misses}),
+con los vectores en hexadecimal y los contadores en decimal.
 
 \begin{figure}[!t]
   \centering
@@ -495,16 +501,18 @@ vecina (0 y 4), que debe quedar intacta.
   \centering
   \includegraphics[width=0.82\textwidth]{figuras/captura_cache_directo.png}
   \caption{Mapeo directo (\texttt{tb\_cache\_directo}): traza completa,
-    FSM y contadores.}
+    FSM y contadores de aciertos y fallos.}
   \label{fig:cap-directo}
 \end{figure}
 
 \textbf{Mapeo directo.} En la Fig.~\ref{fig:cap-directo} las
 direcciones 0, 64 y 128 (palabras 0, 16 y 32) compiten por la línea de
 índice 0 y \texttt{hit} queda bajo cuando ésta no contiene la palabra
-buscada. La fila \texttt{estado} recorre la FSM, \texttt{valid} se
-rellena hasta \texttt{000F} y los contadores acaban en 7 aciertos y 13
-fallos.
+buscada: a lo largo de la traza \texttt{hit} solo pulsa 7 veces. La fila
+\texttt{estado} recorre la FSM y en cada fallo se interna en
+\texttt{FETCH\_MEM} (código 2), donde \texttt{mem\_req} pide el bloque a
+la memoria. Los contadores escalonados acaban en 7 aciertos
+(\texttt{0007} en hexadecimal) y 13 fallos (\texttt{000D}).
 
 \begin{figure}[!t]
   \centering
@@ -517,14 +525,20 @@ fallos.
 \textbf{Mapeo asociativo total.} La Fig.~\ref{fig:cap-asociativa}
 repite la traza sobre las 16 líneas totalmente asociativas: solo
 aparecen los 7 fallos obligatorios de la primera visita a cada
-dirección, \texttt{valid} termina en \texttt{007F} y los contadores en
-13 aciertos y 7 fallos.
+dirección. En la fila \texttt{estado} esos fallos iniciales se
+internan en \texttt{FETCH\_MEM}, pero a partir del acceso 5 la FSM
+salta directo de \texttt{COMPARE} a \texttt{DONE}; el contador
+\texttt{caches\_\allowbreak misses} se congela en 7 (\texttt{0007}) y
+\texttt{caches\_\allowbreak hits} sube hasta 13 (\texttt{000D}). El
+patrón de \emph{thrashing} del mapeo directo no aparece aquí: al no
+haber conflicto de índice, las palabras 0, 16 y 32 conviven en
+líneas distintas.
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=0.82\textwidth]{figuras/captura_cache_conjuntos.png}
   \caption{Por conjuntos (\texttt{tb\_cache\_conjuntos}): 8 conjuntos
-    de 2 vías con LRU de 1 bit.}
+    de 2 vías y fallos de conflicto en el conjunto 0.}
   \label{fig:cap-conjuntos}
 \end{figure}
 
@@ -532,25 +546,34 @@ dirección, \texttt{valid} termina en \texttt{007F} y los contadores en
 Fig.~\ref{fig:cap-conjuntos} usa 8 conjuntos de 2 vías: a los 7 fallos
 obligatorios se suman 3 de conflicto (accesos 17--19), todos en el
 conjunto 0, donde compiten las palabras 0, 16 y 32; con solo dos vías
-la expulsión la decide LRU, visible en la fila \texttt{lru}. Totales:
-10 aciertos, 10 fallos y \texttt{valid} = \texttt{005F} (6 de las 16
-líneas).
+la expulsión la decide la política LRU descrita en la
+sección~\ref{sec:diseno}. La fila \texttt{estado} distingue ambos
+casos y, en cada fallo, la interfaz con la memoria se hace visible:
+\texttt{mem\_req} pulsa una vez y \texttt{mem\_addr} presenta el bloque
+alineado (\texttt{044}, \texttt{080} o \texttt{00C} en los fallos de
+conflicto). Totales: 10 aciertos y 10 fallos
+(\texttt{000A}/\texttt{000A} en los contadores).
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=0.82\textwidth]{figuras/captura_comparacion_mapeos.png}
-  \caption{Los tres mapeos sobre una memoria compartida: señales de
-    acierto y contadores.}
+  \caption{Los tres mapeos sobre una memoria compartida: aciertos,
+    fallos e interfaz de memoria.}
   \label{fig:cap-comparacion}
 \end{figure}
 
 \textbf{Comparación en paralelo.} Por último,
 Fig.~\ref{fig:cap-comparacion}, el banco
 \texttt{tb\_comparacion\_\allowbreak mapeos} superpone sobre una única
-memoria compartida (arbitraje \emph{round-robin}) las tres señales de
-acierto y los seis contadores: \texttt{hit\_asociativa} frecuente,
-\texttt{hit\_conjuntos} intermedia y \texttt{hit\_directo} escasa. Los
-totales, 7/13, 10/10 y 13/7, coinciden con la Tabla~\ref{tab:bancos}.
+memoria compartida las tres señales de acierto y los seis contadores,
+agrupados por mapeo: \texttt{hit\_asociativa} frecuente,
+\texttt{hit\_conjuntos} intermedia y \texttt{hit\_directo} escasa.
+Debajo aparece la memoria compartida (\texttt{mem\_addr},
+\texttt{mem\_req}, \texttt{mem\_ready} y \texttt{mem\_data}), atendida
+por el arbitraje \emph{round-robin} descrito en la
+sección~\ref{sec:propuesta} (las filas \texttt{grant\_s} y
+\texttt{prev\_s} registran la concesión del árbitro). Los totales,
+7/13, 10/10 y 13/7, coinciden con la Tabla~\ref{tab:bancos}.
 
 % ============================================================
 % 5. RESULTADOS  (3–5 cuartillas)
