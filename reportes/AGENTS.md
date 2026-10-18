@@ -30,7 +30,7 @@ Cada reporte DEBE seguir exactamente este orden y estas extensiones
 | **4. Simulaciones de VHDL** | Capturas de los **módulos más importantes** | **máx. 2 hojas** |
 | **5. Resultados** | Análisis de las simulaciones, tablas, figuras | 3–5 cuartillas |
 | **6. Conclusiones** | Cierre y trabajo futuro | 1 cuartilla |
-| **Referencias** | Bibliografía | **≥ 15 referencias** |
+| **Referencias** | Bibliografía | **≥ 15 referencias** (≥ 15 con ISBN/ISSN/DOI) |
 | **Apéndice** | **Código VHDL** completo (el de `vhdl/<unidad>/`) | — |
 
 Al trabajar en un reporte:
@@ -73,6 +73,29 @@ la misma rama secciones de unidades distintas. Flujo completo en
 ## Referencias (regla estricta)
 
 - **Mínimo 15** por reporte.
+- **Al menos 15 deben estar indexadas**: cada una con su identificador en
+  el campo correspondiente del `.bib` — `isbn` (libros), `issn` (revistas)
+  o `doi` (artículos, capítulos y estándares). El identificador debe
+  **verificarse antes de citar** (IEEE Xplore, ACM DL, doi.org, catálogo
+  editorial…); nada de relleno inventado. `splncs04` **no imprime**
+  `isbn`/`issn`/`doi` por sí solo, así que refleja el identificador
+  también en el campo `note` para que se vea en el PDF:
+
+  ```bibtex
+  @article{smith1982,
+    author  = {Smith, Alan Jay},
+    title   = {Cache Memories},
+    journal = {ACM Computing Surveys},
+    volume  = {14}, number = {3}, pages = {473--530},
+    year    = {1982},
+    doi     = {10.1145/356887.356892},
+    note    = {sección 2 — funciones de mapeo y thrashing; DOI: 10.1145/356887.356892, ISSN: 0360-0300}
+  }
+  ```
+
+  Las `@misc` de Wikipedia o de documentación de herramientas (GHDL,
+  GTKWave…) no tienen ni admiten identificador; no las cuentes para las
+  15.
 - Cada referencia debe indicar **exactamente dónde aparece el texto sugerido**:
   dejar constancia de la ubicación concreta (capítulo/§, página, figura, tabla
   o URL + fecha de consulta) en el campo `note` de la entrada `.bib`. Ejemplo:
