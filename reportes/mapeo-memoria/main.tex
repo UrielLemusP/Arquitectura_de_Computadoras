@@ -187,6 +187,31 @@ Caché & 64\,B (16 líneas) & & \\
 \end{tabular}
 \end{table}
 
+El papel de la caché se entiende dentro de la jerarquía de memoria:
+cuanto más cerca del procesador, los almacenamientos son más rápidos y
+más pequeños, y más lentos y grandes al alejarse
+\cite{tanenbaum2013,wikipedia-locality}. La caché es el primer nivel
+de esa jerarquía y vive de los principios de localidad temporal y
+espacial \cite{wikipedia-locality,stallings2019}: un programa vuelve
+a usar pronto los mismos datos y usa datos que guardan relación entre
+sí. Para que la localidad espacial rinda, el bloque debería contener
+varias palabras consecutivas; aquí el bloque es de una sola palabra
+(4 bytes), una simplificación deliberada que aísla el efecto del
+mapeo y que se discute en la sección~\ref{sec:resultados}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figuras/reparto_direccion.png}
+  \caption{Reparto de la dirección de 10 bits en los tres mapeos: la
+    etiqueta se guarda, el índice o el conjunto sitúa la línea y el
+    offset elige el byte dentro del bloque.}
+  \label{fig:reparto}
+\end{figure}
+
+La Fig.~\ref{fig:reparto} ilustra el reparto de los bits: al crecer
+la asociatividad, los bits de índice pasan a formar parte de la
+etiqueta, y por eso hay que comparar más etiquetas en cada acceso.
+
 \subsection{Mapeo directo}
 
 En el mapeo directo cada bloque solo puede ocupar una única línea de
@@ -249,7 +274,72 @@ más reciente), y la por conjuntos implementa LRU exacto con 1 bit por
 conjunto al tener solo dos vías. En un diseño real el LRU exacto de
 16 vías no es barato y se sustituye por aproximaciones
 \cite{hennessy2019}; aquí se justifica por tratarse de un modelo de
-simulación de tamaño reducido.
+simulación de tamaño reducido. Las alternativas a LRU son bien
+conocidas: aleatorio, FIFO o aproximaciones como pseudo-LRU, que
+apenas pierden tasa de aciertos y ahorran coste
+\cite{hennessy2019,wikipedia-replacement}. Aquí solo hacen falta dos
+variantes baratas: un contador de antigüedad por línea en la
+totalmente asociativa y un bit por conjunto en la por conjuntos, que
+con dos vías equivale a LRU exacto \cite{wikipedia-cpu-cache}.
+
+\subsection{Funcionamiento de una consulta}
+
+Los tres cachés comparten interfaz y máquina de estados, de modo que
+una consulta recorre los mismos pasos en los tres; solo cambia cómo
+se busca y se compara la etiqueta.
+
+\textbf{Acierto.} El banco de prueba pone la dirección en
+\texttt{addr} y activa \texttt{req}. En el flanco siguiente la
+máquina sale de \texttt{IDLE} y entra en \texttt{COMPARE}: se extraen
+los campos de la dirección y se comparan la etiqueta (o las
+etiquetas) con la de la línea seleccionada; con coincidencia,
+\texttt{hit} se activa y el dato de la línea queda disponible. El
+flanco siguiente la máquina pasa a \texttt{DONE}, donde se levanta
+\texttt{ready}; el banco toma \texttt{data} y baja \texttt{req}. Un
+acierto ocupa tres ciclos de reloj.
+
+\textbf{Fallo.} El comienzo es idéntico, pero sin coincidencia
+\texttt{hit} permanece baja y la máquina avanza a
+\texttt{FETCH\_MEM}: la caché emite la dirección del bloque por
+\texttt{mem\_addr} y activa \texttt{mem\_req}. La memoria principal,
+de latencia de un ciclo, responde con \texttt{mem\_ready} y el dato;
+entonces la caché guarda el bloque en su línea, la marca como válida,
+actualiza su política de reemplazo y pasa a \texttt{DONE}, donde
+\texttt{ready} entrega el dato solicitado. El paso por
+\texttt{FETCH\_MEM} y la espera a la memoria alargan el fallo hasta
+seis ciclos. La sección~\ref{sec:resultados} mide ambas latencias
+sobre los ficheros~VCD.
+
+\subsection{Coste de cada mapeo}
+
+El coste de un mapeo se concentra en comparar etiquetas y en decidir
+víctimas. La Tabla~\ref{tab:coste} resume lo que implica cada uno
+para la caché de este trabajo.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrrr@{}}
+\hline\noalign{\smallskip}
+Mapeo & Comparadores & Reemplazo & Selección \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+Directo & 1 $\times$ 4 bits & ninguno & por índice \\
+Asociativo total & 16 $\times$ 8 bits & contador de 4 bits & mux 16 a 1 \\
+Por conjuntos & 2 $\times$ 5 bits & 1 bit por conjunto & mux 2 a 1 \\
+\noalign{\smallskip}\hline
+\end{tabular}
+\caption{Coste de la comparación de etiquetas y del reemplazo en cada mapeo.}
+\label{tab:coste}
+\end{table}
+
+El directo no tiene red de selección ni política que decidir; el
+total concentra su coste en los 16 comparadores y en buscar la
+víctima entre las 16 líneas; y el por conjuntos obtiene la mayor
+parte del efecto del total con dos comparadores por acceso
+\cite{hennessy2019,wikipedia-cpu-cache}. Cada salto de asociatividad
+compra aciertos con hardware de comparación:
+Tabla~\ref{tab:resultados} muestra lo que cuesta cada paso en la
+traza de este trabajo.
 
 \subsection{Decisiones de diseño y módulos VHDL}
 
