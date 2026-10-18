@@ -34,11 +34,14 @@
   commentstyle=\color{gray}\itshape,
   stringstyle=\color{black},
   showstringspaces=false,
+  upquote=true,
+  columns=fullflexible,
   breaklines=true,
   frame=single,
   rulecolor=\color{black}
 }
 \lstset{style=vhdl}
+\renewcommand{\lstlistingname}{Listado}
 
 % ---- Estilo para bloques de comandos del repositorio (sección 3) ----
 \lstdefinestyle{shell}{
@@ -47,6 +50,8 @@
   commentstyle=\color{gray}\itshape,
   stringstyle=\color{black},
   showstringspaces=false,
+  upquote=true,
+  columns=fullflexible,
   breaklines=true,
   frame=single,
   rulecolor=\color{black}
@@ -757,16 +762,33 @@ por tanto, de una ejecución aislada, sino del propio código.
 \section{Código VHDL}
 \label{app:codigo}
 
-Código completo de los módulos de la unidad (copiado de
-\texttt{vhdl/\allowbreak mapeo-\allowbreak memoria/\allowbreak
-src/}). Usa \texttt{lstlisting}:
+Código completo de los cuatro módulos de la unidad: memoria principal
+(Listado~\ref{lst:memoria}), mapeo directo (Listado~\ref{lst:directo}),
+asociativo total (Listado~\ref{lst:asociativa}) y asociativo por
+conjuntos (Listado~\ref{lst:conjuntos}). Los listados se incluyen con
+\texttt{lstinputlisting} directamente desde
+\texttt{vhdl/\allowbreak mapeo-\allowbreak memoria/\allowbreak src/},
+de modo que siempre coinciden con el código que ejecutan los bancos de
+prueba de la sección~\ref{sec:propuesta}.
 
-% Sustituye por el código real de cada módulo de la unidad.
-% \begin{lstlisting}[caption={sumador.vhd --- <descripción>}, label=lst:sumador]
-% library ieee;
-% use ieee.std_logic_1164.all;
-% use ieee.numeric_std.all;
-% ...
-% \end{lstlisting}
+\lstinputlisting[
+  caption={memoria\_principal.vhd --- RAM de comportamiento de 1~KiB
+    (256 palabras de 4~B) con patrón de fábrica y puerto de escritura},
+  label={lst:memoria}]{../../vhdl/mapeo-memoria/src/memoria_principal.vhd}
+
+\lstinputlisting[
+  caption={cache\_directo.vhd --- caché de mapeo directo: 16 líneas de
+    4~B, sin reemplazo, FSM de cuatro estados},
+  label={lst:directo}]{../../vhdl/mapeo-memoria/src/cache_directo.vhd}
+
+\lstinputlisting[
+  caption={cache\_asociativa.vhd --- caché asociativa total: 16 líneas
+    con comparación paralela de las etiquetas y LRU por contador},
+  label={lst:asociativa}]{../../vhdl/mapeo-memoria/src/cache_asociativa.vhd}
+
+\lstinputlisting[
+  caption={cache\_conjuntos.vhd --- caché por conjuntos: 8 conjuntos de
+    2 vías con LRU de 1 bit por conjunto},
+  label={lst:conjuntos}]{../../vhdl/mapeo-memoria/src/cache_conjuntos.vhd}
 
 \end{document}
