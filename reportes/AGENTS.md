@@ -40,6 +40,22 @@ Al trabajar en un reporte:
 2. Mantén los **nombres de sección** de la tabla (son los que pide el formato).
 3. Si el usuario pide una sección concreta, respeta su extensión máxima.
 4. **No** metas texto de relleno inventado en referencias.
+5. **Abre la rama de la feature antes de escribir** (ver siguiente sección).
+
+## Git: una rama por cada feature
+
+Cada bloque de trabajo del reporte es una feature: una sección nueva, la
+bibliografía, el apéndice, una tanda de capturas... **Abre su rama antes de
+tocar el `.tex`**, aunque el usuario no lo pida explícitamente:
+
+```bash
+git switch dev && git pull
+git switch -c reporte/<unidad>/<feat>   # ej.: reporte/datapath-1/seccion-simulaciones
+```
+
+Al terminar, PR de esa rama → `dev`. **Una feature = una rama**: no mezcles en
+la misma rama secciones de unidades distintas. Flujo completo en
+`docs/guia-git.md`.
 
 ## Reglas de formato llncs
 
