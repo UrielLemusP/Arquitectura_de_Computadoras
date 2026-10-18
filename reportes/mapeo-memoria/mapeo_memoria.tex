@@ -190,9 +190,9 @@ Caché & 64\,B (16 líneas) & & \\
 El papel de la caché se entiende dentro de la jerarquía de memoria:
 cuanto más cerca del procesador, los almacenamientos son más rápidos y
 más pequeños, y más lentos y grandes al alejarse
-\cite{tanenbaum2013,wikipedia-locality}. La caché es el primer nivel
+\cite{tanenbaum2013,hamacher2002,wikipedia-locality}. La caché es el primer nivel
 de esa jerarquía y vive de los principios de localidad temporal y
-espacial \cite{wikipedia-locality,stallings2019}: un programa vuelve
+espacial \cite{wikipedia-locality,stallings2019,smith1982}: un programa vuelve
 a usar pronto los mismos datos y usa datos que guardan relación entre
 sí. Para que la localidad espacial rinda, el bloque debería contener
 varias palabras consecutivas; aquí el bloque es de una sola palabra
@@ -280,7 +280,10 @@ apenas pierden tasa de aciertos y ahorran coste
 \cite{hennessy2019,wikipedia-replacement}. Aquí solo hacen falta dos
 variantes baratas: un contador de antigüedad por línea en la
 totalmente asociativa y un bit por conjunto en la por conjuntos, que
-con dos vías equivale a LRU exacto \cite{wikipedia-cpu-cache}.
+con dos vías equivale a LRU exacto \cite{wikipedia-cpu-cache}. Conviene
+recordar, además, por qué no se usa FIFO: su sustituto óptimo puede
+empeorar al añadir marcos, la conocida anomalía de Belady
+\cite{belady1969}.
 
 \subsection{Funcionamiento de una consulta}
 
@@ -384,8 +387,11 @@ apéndice.
 
 \subsection{Entorno de simulación}
 
-Las descripciones están escritas en VHDL-2008~\cite{ieee1076} y se
-verifican por simulación funcional con GHDL~\cite{ghdl-docs}, un
+Las descripciones están escritas en VHDL-2008~\cite{ieee1076}, con el
+paquete estándar \texttt{std\_logic\_1164}~\cite{ieee1164} que define el
+tipo lógico multivalor de todos los puertos y señales, y siguen la
+metodología de modelado y bancos de prueba de la bibliografía de
+referencia~\cite{harris2008}. Se verifican por simulación funcional con GHDL~\cite{ghdl-docs}, un
 simulador libre y multiplataforma que se emplea en tres
 fases~\cite{ghdl-invoking}: \emph{análisis} (\texttt{-a}) del código
 fuente, \emph{elaboración} (\texttt{-e}) del diseño y \emph{ejecución}
@@ -648,7 +654,7 @@ palabras 0, 1, 2, 3, 16, 17 y 32) y ninguna caché puede resolverlas sin
 cargar antes el bloque \cite{wikipedia-metrics,wikipedia-cache}. Tampoco
 hay fallos de capacidad, porque el conjunto de trabajo (7 bloques de
 4~B) cabe con holgura en las 16 líneas de 4~B de la caché
-\cite{wikipedia-metrics}. Por tanto, la diferencia observada
+\cite{wikipedia-metrics,denning1968}. Por tanto, la diferencia observada
 --6, 3 y 0-- son fallos de conflicto: los que aparecen cuando un bloque
 legítimo no encuentra línea libre en su índice o en su conjunto
 \cite{wikipedia-metrics,stallings2019}. La Tabla~\ref{tab:resultados}
@@ -666,7 +672,9 @@ conflicto del directo pertenecen al primer grupo (los accesos 5, 12,
 lectura expulsa a la anterior, que volverá a fallar cuando se pida de
 nuevo. Es el patrón de \emph{thrashing} que Stallings ilustra tras la
 Fig.~5.8 de su cap.~5 \cite{stallings2019} y que la clasificación de 3C
-asocia a los fallos de conflicto \cite{wikipedia-metrics}; es también el
+asocia a los fallos de conflicto \cite{wikipedia-metrics}; el marco del
+conjunto de trabajo formaliza por qué alternar entre conjuntos disjuntos
+desborda la caché \cite{denning1968,denning1972}; es también el
 punto en que la caché deja de compensar \cite{null2024}.
 
 El por conjuntos contiene el daño porque el conjunto 0 tiene dos vías:
@@ -791,7 +799,9 @@ un modelo de memoria de un ciclo, no de un procesador real.
 A esto se suma que los parámetros elegidos condicionan el resultado: el
 bloque es de una sola palabra (4~B), de modo que cuatro palabras
 contiguas ocupan cuatro líneas distintas y no se aprovecha la localidad
-espacial dentro del bloque \cite{bryant2015,wikipedia-locality}, y con
+espacial dentro del bloque \cite{bryant2015,wikipedia-locality,lam1991}; el
+tamaño de bloque es precisamente uno de los parámetros que más afecta al
+rendimiento de una caché \cite{smith1987}. Con
 16 líneas el conjunto de trabajo cabe entero. Con bloques mayores o con
 menos líneas, el reparto de fallos sería distinto
 \cite{bryant2015,patterson2017}.
