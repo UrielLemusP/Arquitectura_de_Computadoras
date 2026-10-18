@@ -376,16 +376,86 @@ del proyecto (análisis, elaboración, ejecución y revisión de ondas).
 \section{Simulaciones de VHDL}
 \label{sec:simulaciones}
 
-Capturas de los módulos más importantes (máximo 2 hojas). Exporta las ondas
-de \texttt{vhdl/mapeo-memoria/salidas/*.vcd} a PNG en \texttt{figuras/}.
+Los cinco bancos terminan con su mensaje de \texttt{OK} sin disparar
+ninguna aserción (Tabla~\ref{tab:bancos}). Las figuras son capturas de
+GTKWave sobre los ficheros~VCD de \texttt{vhdl/mapeo-memoria/salidas/},
+con la traza completa a la vista (0~ns hasta el final de la simulación).
 
-% Descomenta el bloque cuando exista la captura en figuras/
-% \begin{figure}[t]
-%   \centering
-%   \includegraphics[width=0.9\textwidth]{figuras/captura_modulo.png}
-%   \caption{Simulación de <módulo>: descripción breve de lo que se observa.}
-%   \label{fig:captura}
-% \end{figure}
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{figuras/captura_memoria_principal.png}
+  \caption{Memoria principal (\texttt{tb\_memoria\_principal}): patrón
+    de fábrica y dos escrituras verificadas.}
+  \label{fig:cap-memoria}
+\end{figure}
+
+\textbf{Memoria principal.} La Fig.~\ref{fig:cap-memoria} muestra las
+cuatro lecturas iniciales del patrón de fábrica (palabras 0, 1, 16 y
+255) y las dos escrituras: \texttt{A5A5F00F} sobre la dirección 20 y
+\texttt{000000AA} sobre la 64. Tras cada escritura \texttt{wr\_en}
+pulsa un ciclo, el banco relee esa dirección y después una palabra
+vecina (0 y 4), que debe quedar intacta.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{figuras/captura_cache_directo.png}
+  \caption{Mapeo directo (\texttt{tb\_cache\_directo}): traza completa,
+    FSM y contadores.}
+  \label{fig:cap-directo}
+\end{figure}
+
+\textbf{Mapeo directo.} En la Fig.~\ref{fig:cap-directo} las
+direcciones 0, 64 y 128 (palabras 0, 16 y 32) compiten por la línea de
+índice 0 y \texttt{hit} queda bajo cuando ésta no contiene la palabra
+buscada. La fila \texttt{estado} recorre la FSM, \texttt{valid} se
+rellena hasta \texttt{000F} y los contadores acaban en 7 aciertos y 13
+fallos.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{figuras/captura_cache_asociativa.png}
+  \caption{Asociativa total (\texttt{tb\_cache\_asociativa}): 7 fallos
+    obligatorios y 13 aciertos.}
+  \label{fig:cap-asociativa}
+\end{figure}
+
+\textbf{Mapeo asociativo total.} La Fig.~\ref{fig:cap-asociativa}
+repite la traza sobre las 16 líneas totalmente asociativas: solo
+aparecen los 7 fallos obligatorios de la primera visita a cada
+dirección, \texttt{valid} termina en \texttt{007F} y los contadores en
+13 aciertos y 7 fallos.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{figuras/captura_cache_conjuntos.png}
+  \caption{Por conjuntos (\texttt{tb\_cache\_conjuntos}): 8 conjuntos
+    de 2 vías con LRU de 1 bit.}
+  \label{fig:cap-conjuntos}
+\end{figure}
+
+\textbf{Mapeo asociativo por conjuntos.} La
+Fig.~\ref{fig:cap-conjuntos} usa 8 conjuntos de 2 vías: a los 7 fallos
+obligatorios se suman 3 de conflicto (accesos 17--19), todos en el
+conjunto 0, donde compiten las palabras 0, 16 y 32; con solo dos vías
+la expulsión la decide LRU, visible en la fila \texttt{lru}. Totales:
+10 aciertos, 10 fallos y \texttt{valid} = \texttt{005F} (6 de las 16
+líneas).
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{figuras/captura_comparacion_mapeos.png}
+  \caption{Los tres mapeos sobre una memoria compartida: señales de
+    acierto y contadores.}
+  \label{fig:cap-comparacion}
+\end{figure}
+
+\textbf{Comparación en paralelo.} Por último,
+Fig.~\ref{fig:cap-comparacion}, el banco
+\texttt{tb\_comparacion\_\allowbreak mapeos} superpone sobre una única
+memoria compartida (arbitraje \emph{round-robin}) las tres señales de
+acierto y los seis contadores: \texttt{hit\_asociativa} frecuente,
+\texttt{hit\_conjuntos} intermedia y \texttt{hit\_directo} escasa. Los
+totales, 7/13, 10/10 y 13/7, coinciden con la Tabla~\ref{tab:bancos}.
 
 % ============================================================
 % 5. RESULTADOS  (3–5 cuartillas)
