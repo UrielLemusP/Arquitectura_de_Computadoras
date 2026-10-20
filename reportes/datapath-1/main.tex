@@ -19,20 +19,34 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage{listings}
-\usepackage{hyperref}
 \usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+  hidelinks,
+  colorlinks=false,
+  pdfborder={0 0 0},
+  bookmarksnumbered=true
+}
+
+% ---- Encabezado del resumen en español (llncs lo pone en inglés) ----
+\renewcommand{\abstractname}{Resumen.}
 
 % ---- Estilo para código VHDL (apéndice y fragmentos) ----
 \lstdefinestyle{vhdl}{
   language=VHDL,
-  basicstyle=\ttfamily\scriptsize,
+  basicstyle=\ttfamily\fontsize{9}{10.5}\selectfont,
   keywordstyle=\color{black},
-  commentstyle=\color{gray}\itshape,
+  commentstyle=\color{black}\itshape,
   stringstyle=\color{black},
   showstringspaces=false,
   breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
   frame=single,
-  rulecolor=\color{black}
+  rulecolor=\color{black},
+  xleftmargin=0.6em,
+  xrightmargin=0.6em
 }
 \lstset{style=vhdl}
 \setlength{\emergencystretch}{2em}
@@ -40,10 +54,10 @@
 \begin{document}
 
 % ============================================================
-% TÍTULO Y AUTORES  (rellenar: los 5 integrantes del equipo)
+% TÍTULO Y AUTORES
 % ============================================================
-% TODO título provisional: pendiente de validación por el equipo
-\title{Diseño y Verificación de un Datapath con MUX, ALU y Registro Realimentado en {VHDL}}
+\title{Diseño y Verificación en {VHDL} de un Datapath de 8~Bits:
+Datapath 1 --- MUX, ALU, Registro Realimentado y Buffer de Salida}
 
 \author{Aldo Mauricio Villegas Peralta$^{1}$,%
 \and Uriel Lemus Pérez$^{1}$,%
@@ -62,7 +76,7 @@ Benemérita Universidad Autónoma de Puebla, Puebla, México\\
 % RESUMEN  (< 100 palabras — fuente 9pt con sangría, estilo llncs)
 % ============================================================
 \begin{abstract}
-Resumen. Se diseña y verifica por simulación un datapath de 8~bits con MUX
+Se diseña y verifica por simulación un datapath de 8~bits con MUX
 de entrada, ALU de tres operaciones ($n+x$, $2n+x$, $n+1$), registro con
 carga realimentado a la ALU y buffer tri-estado de salida. El circuito se
 describe en VHDL-2008 y se valida con cinco bancos de prueba autochequeados
@@ -91,7 +105,7 @@ las operaciones~\cite{hamacher2002co}. Las implementaciones de referencia de
 ciclo único ilustran exactamente esta separación: un datapath formado por
 MUX, ALU y registros, gobernado por una unidad de control que genera una
 palabra de control por ciclo~\cite{patterson2017cod,bryant2015csapp}.
-El crecimiento sostenido del número de transistores~\cite{wiki-moore} ha
+El crecimiento sostenido del número de transistores~\cite{hennessy2017qa} ha
 desplazado buena parte del esfuerzo de diseño hacia la descripción y la
 verificación automatizadas: antes de construir, el circuito se modela en un
 lenguaje de descripción de hardware y se valida por simulación. En el marco
@@ -109,10 +123,11 @@ valor externo y la constante cero; una ALU que implementa tres operaciones
 sobre sus dos operandos ($n+x$, $2n+x$ y $n+1$); un registro síncrono con
 carga y reinicio; y un buffer tri-estado que conecta la salida externa. La
 secuencia no la genera ninguna máquina de estados: una palabra de control de
-seis campos, aplicada directamente por el entorno de simulación, distribuye
+seis bits distribuidos en cuatro campos, aplicada directamente por el
+entorno de simulación, distribuye
 el bit de habilitación de salida, la carga del registro, la selección del
 MUX y el código de operación de la ALU. Ese alcance es deliberado: sin
-unidad de control ni autómata finito~\cite{wiki-fsm}, se modela y verifica
+unidad de control ni autómata finito~\cite{mano2016lcdf}, se modela y verifica
 únicamente la ruta de datos, que es el componente ejecutor del
 computador~\cite{hamacher2002co}.
 
@@ -149,7 +164,7 @@ ciclo~\cite{hamacher2002co,patterson2017cod}. En los diseños de libro esa
 unidad de control se modela habitualmente como una máquina de estados de
 estilo Moore o Mealy~\cite{mano2016lcdf,harris2015ddca,brown2009fdld,roth2013fld};
 formalmente, un autómata finito es una quíntupla de estados, entradas,
-función de transición, estado inicial y estados finales~\cite{wiki-fsm}, y
+función de transición, estado inicial y estados finales~\cite{roth2013fld}, y
 las señales de control se reparten en campos codificados dentro de una
 microinstrucción~\cite{katz2005cld,wakerly2005ddpp}.
 
@@ -166,15 +181,15 @@ habilitación de carga que trabaja de forma síncrona~\cite{mano2016lcdf}; su
 modelado recurre a los procesos y a las sentencias condicionales y de caso
 del lenguaje~\cite{ashenden2008vhdl}. La salida del conjunto se habilita
 mediante un buffer tri-estado, que deja el bus en alta impedancia
-(`\texttt{Z}') cuando no está activo~\cite{wakerly2005ddpp,wiki-tristate};
+(`\texttt{Z}') cuando no está activo~\cite{wakerly2005ddpp};
 los nueve valores de la lógica resoluble que incluyen esa alta impedancia
 están definidos por el paquete \texttt{std\_logic\_1164} del
 estándar~\cite{ieee1164_1993}.
 
 Por su parte, la ALU combina operaciones aritméticas y de corrimiento
 dentro de un mismo bloque~\cite{rabaey2002dic}. Existen estructuras
-dedicadas, los \emph{barrel shifters}, que corrigen $N$ posiciones en un
-solo ciclo~\cite{wiki-barrel}, pero el circuito de origen no incluye un
+dedicadas, los \emph{barrel shifters}, que desplazan $N$ posiciones en un
+solo ciclo~\cite{katz2005cld}, pero el circuito de origen no incluye un
 shifter independiente: la única operación de corrimiento necesaria ---el
 desplazamiento de un bit que produce el doble de $n$--- se implementa
 dentro de la propia ALU (§\ref{sec:alu-op}).
@@ -200,21 +215,22 @@ diseño: la fotografía del material de clase no etiqueta un reloj.
   \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}[
       >=Stealth,
-      blk/.style={draw, fill=gray!15, minimum width=17mm, minimum height=10mm,
-                  align=center, font=\footnotesize},
-      wire/.style={->, semithick},
+      blk/.style={draw, fill=gray!12, rounded corners=1pt,
+                  minimum width=22mm, minimum height=13mm,
+                  align=center, font=\small},
+      wire/.style={->, thick},
       cwire/.style={->, thick, dashed},
-      lab/.style={font=\scriptsize, inner sep=1pt}
+      lab/.style={font=\small, inner sep=1.5pt}
     ]
     % ---- cadena de datos
     \node[blk] (mux) at (0,0)   {MUX\\ $2\to1$};
-    \node[blk] (alu) at (3,0)   {ALU};
-    \node[blk] (reg) at (6,0)   {REGISTRO};
-    \node[blk] (buf) at (9,0)   {BUFFER\\ tri-estado};
-    \node[lab, right=6mm of buf, font=\footnotesize\bfseries] (sal) {SALIDA};
+    \node[blk] (alu) at (3.6,0) {ALU};
+    \node[blk] (reg) at (7.2,0) {REGISTRO};
+    \node[blk] (buf) at (10.8,0) {BUFFER\\ tri-estado};
+    \node[lab, right=7mm of buf, font=\small\bfseries] (sal) {SALIDA};
 
-    \node[lab, left=10mm of mux] (dext) {\texttt{dato\_ext}};
-    \node[lab, below=3mm of dext] (cero) {constante $0$};
+    \node[lab, left=12mm of mux] (dext) {\texttt{dato\_ext}};
+    \node[lab, below=4mm of dext] (cero) {constante $0$};
 
     \draw[wire] (dext) -- (mux);
     \draw[wire] (cero) -- (mux);
@@ -224,22 +240,22 @@ diseño: la fotografía del material de clase no etiqueta un reloj.
     \draw[wire] (buf) -- (sal);
 
     % ---- realimentación Q -> B
-    \draw[wire] (reg.south) -- ++(0,-9mm) -- node[lab, below] {$B=Q$}
-                ++(-3,0) -- (alu.south);
+    \draw[wire] (reg.south) -- ++(0,-11mm) -- node[lab, below] {$B=Q$}
+                ++(-3.6,0) -- (alu.south);
 
     % ---- bus de control
-    \draw[semithick] (0,2.1) -- (9,2.1);
-    \node[lab, above=2pt] at (4.5,2.1)
-      {\footnotesize CW $=$ [\texttt{O.E}, \texttt{L}, \texttt{M},
+    \draw[very thick] (-1.5,2.9) -- (10.8,2.9);
+    \node[lab, above=3pt, font=\small] at (4.65,2.9)
+      {CW $=$ [\texttt{O.E}, \texttt{L}, \texttt{M},
        \texttt{C2}, \texttt{C1}, \texttt{C0}]};
-    \draw[cwire] (0,2.1) -- node[lab, left] {$M$}  (0,0.5);
-    \draw[cwire] (3,2.1) -- node[lab, left] {$C$}  (3,0.5);
-    \draw[cwire] (6,2.1) -- node[lab, left] {$L$}  (6,0.5);
-    \draw[cwire] (9,2.1) -- node[lab, left]
-      {$\mathtt{O.E}$} (9,0.5);
+    \draw[cwire] (0,2.9) -- node[lab, left] {$M$}  (0,0.65);
+    \draw[cwire] (3.6,2.9) -- node[lab, left] {$C$}  (3.6,0.65);
+    \draw[cwire] (7.2,2.9) -- node[lab, left] {$L$}  (7.2,0.65);
+    \draw[cwire] (10.8,2.9) -- node[lab, left]
+      {$\mathtt{O.E}$} (10.8,0.65);
 
     % ---- clk y rst
-    \node[lab] (clkrst) at (8.1,-1.15) {\texttt{clk}, \texttt{rst}};
+    \node[lab] (clkrst) at (9.9,-1.5) {\texttt{clk}, \texttt{rst}};
     \draw[cwire] (clkrst.west) -- (reg.south east);
   \end{tikzpicture}}
   \caption{Arquitectura del Datapath 1 (elaboración propia a partir del
@@ -620,7 +636,7 @@ La Tabla~\ref{tab:res-alu} recoge, para una muestra representativa de los
 27~casos comprobados, el valor de los operandos, el código y el resultado
 observado, con el resultado matemático de referencia. Los tres
 desbordamientos documentados en la Sección~\ref{sec:decisiones} se
-manifiestan como envolvura módulo $2^8$: $200+100$ da \texttt{0x2C} (=~44),
+manifiestan como desbordamiento modular (envoltura) de módulo $2^8$: $200+100$ da \texttt{0x2C} (=~44),
 porque $300 \bmod 256 = 44$; doblar $200$ da \texttt{0x90} (=~144),
 porque $400 \bmod 256 = 144$; y $255+1$ da \texttt{0x00}. Ninguno de estos
 casos es un fallo del modelo, sino la consecuencia de trabajar sin banderas
@@ -716,7 +732,8 @@ En cuanto a coste, y sin entrar en síntesis (el flujo es solo simulación),
 el datapath resuelve cada micro-operación en un único ciclo de reloj,
 salvo la secuencia de inicialización que requiere un \texttt{rst} previo
 para poder cargar \texttt{dato\_ext} con $B=0$. No hay por tanto
-subsidios de varios ciclos ni \emph{overhead} de una máquina de estados,
+operaciones que abarquen varios ciclos ni \emph{overhead} de una máquina de
+estados,
 a cambio de que la secuencia la deba aportar el entorno externo; desde la
 perspectiva de las métricas de rendimiento clásicas, el tiempo de
 ejecución de una secuencia es proporcional al número de palabras de
@@ -736,7 +753,7 @@ pedidas; se resuelve con el reinicio, que es una decisión de diseño
 adicional y no un elemento del esquema original. Por último, la
 codificación binaria de la ALU es provisional: el comportamiento del
 modelo es correcto \emph{bajo esa codificación}, pero si el material del
-curso fija otra, habría que reejustar la tabla y repetir la verificación.
+curso fija otra, habría que reajustar la tabla y repetir la verificación.
 Los bancos de prueba están escritos de forma que ese cambio afectaría solo
 a la tabla de la §\ref{sec:alu-op} y a los estímulos de \texttt{tb\_alu} y
 \texttt{tb\_datapath}.

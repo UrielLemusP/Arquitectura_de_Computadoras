@@ -1,0 +1,21 @@
+# ============================================================
+# Configuración de GTKWave para las capturas del reporte
+# datapath-1. Se pasa con -r al lanzar GTKWave:
+#
+#   gtkwave -r reportes/datapath-1/capturas/gtkwave.rc \
+#           -S reportes/datapath-1/capturas/tb-*.tcl \
+#           vhdl/datapath-1/salidas/tb_*.vcd
+#
+# Objetivo: fondo claro, rejilla suave y tipografía monoespaciada
+# grande para que las ondas se lean al tamaño de \textwidth.
+# ============================================================
+use_pango_fonts on
+use_nonprop_fonts yes
+use_big_fonts yes
+fontname_signals Monospace 16
+fontname_waves Monospace 16
+show_grid yes
+enable_horiz_grid yes
+dynamic_resizing 1
+fill_waveform no
+use_roundcaps 1

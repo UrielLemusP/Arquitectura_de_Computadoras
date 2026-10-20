@@ -8,7 +8,9 @@
 %   * ISBNs y DOIs verificados en catálogos editoriales, IEEE Xplore,
 %     doi.org, etc. (2026-10-19, por el equipo para el reporte
 %     datapath-3; reutilizados aquí con `note` adaptados al alcance
-%     de este informe: ruta MUX-ALU-registro-buffer, sin FSM).
+%     de este informe: ruta MUX-ALU-registro-buffer, sin FSM);
+%   * solo fuentes académicas indexadas (16 con ISBN/DOI) más la
+%     documentación de las herramientas (GHDL, GTKWave).
 % ============================================================
 
 % ---- Libros con ISBN verificado ----------------------------
@@ -204,34 +206,7 @@
   note         = {sección ``Documentation'' y guía de scripting Tcl (addSignalsFromList, Grab\_To\_File), usadas para las capturas de este informe; consulta: 2026-10-19}
 }
 
-@misc{wiki-moore,
-  author       = {{Wikipedia contributors}},
-  title        = {Moore's law},
-  howpublished = {\url{https://es.wikipedia.org/wiki/Ley_de_Moore}},
-  year         = {2026},
-  note         = {sección ``Enunciado'' -- doblecimiento periódico del número de transistores; consulta: 2026-10-19}
-}
-
-@misc{wiki-fsm,
-  author       = {{Wikipedia contributors}},
-  title        = {Autómata finito},
-  howpublished = {\url{https://es.wikipedia.org/wiki/Aut%C3%B3mata_finito}},
-  year         = {2026},
-  note         = {sección ``Definición formal'' -- quintuple (estados, entrada, transición, estado inicial, estados finales), empleada al justificar por qué este datapath no incluye FSM; consulta: 2026-10-19}
-}
-
-@misc{wiki-tristate,
-  author       = {{Wikipedia contributors}},
-  title        = {Buffer tri-estado},
-  howpublished = {\url{https://es.wikipedia.org/wiki/Buffer_tri-estado}},
-  year         = {2026},
-  note         = {sección ``Descripción'' -- salida en alta impedancia (Z) para compartir un bus; consulta: 2026-10-19}
-}
-
-@misc{wiki-barrel,
-  author       = {{Wikipedia contributors}},
-  title        = {Barrel shifter},
-  howpublished = {\url{https://en.wikipedia.org/wiki/Barrel_shifter}},
-  year         = {2026},
-  note         = {sección ``Overview'' -- corrimiento por N posiciones en un solo ciclo; contexto del desplazamiento de 1 bit embebido en la ALU; consulta: 2026-10-19}
-}
+% (Las entradas de Wikipedia del borrador inicial se retiraron: las ideas
+%  de ley de Moore, autómata finito, buffer tri-estado y barrel shifter se
+%  citan ahora a libros académicos de esta bibliografía — Hennessy y
+%  Patterson; Mano, Kime y Martin; Roth y Kinney; Wakerly; y Katz y Borriello.)
