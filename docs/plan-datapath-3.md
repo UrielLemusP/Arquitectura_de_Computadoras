@@ -234,16 +234,19 @@ fin: Acc ← R6
 **Exp 4 — Fibonacci (0 ≤ n ≤ 13, F(0)=0, F(1)=1)**
 ```
 a ← 0 ; b ← 1 ; n ← entrada
-si n = 0 → fin_a
+si n = 0 → fin_a                            # F(0) = a
+si n = 1 → fin_b                            # F(1) = b
+veces ← n − 1
 bucle: next ← a + b ; a ← b ; b ← next
-        n ← n − 1 ; si cero → fin_b        # n iteraciones
+        veces ← veces − 1 ; si cero → fin_b # n−1 iteraciones
         ir a bucle
 fin_a: Acc ← a                              # F(0)
 fin_b: Acc ← b                              # F(n)
 ```
 
-Verificación de convención: n=1 → una iteración → a=1, b=1 ⇒ F(1)=1 ✓;
-n=2 → dos iteraciones ⇒ b=2 = F(2) ✓; n=7 ⇒ b=13 = F(7) ✓.
+Verificación de convención: con a=0, b=1, k iteraciones dejan b = F(k+1),
+por eso el bucle corre n−1 veces. n=1 sale en fin_b con b=1 = F(1) ✓;
+n=7 ⇒ 6 iteraciones ⇒ b=13 = F(7) ✓.
 
 ### 7.3 Operaciones ALU usadas por experimento
 
@@ -345,7 +348,11 @@ n=5 ⇒ 1×2=2, ×3=6, ×4=24, ×5=120 ✓. n=1 ⇒ salta en 41 ⇒ 1 ✓.
 
 4×3 ⇒ 4,8,12 ✓. B=0 ⇒ paso 71 → fin con P=0 ✓.
 
-### 8.4 Exp 4 — Fibonacci (ROM 96–115, modo 11)
+### 8.4 Exp 4 — Fibonacci (ROM 96–118, modo 11)
+
+> Corrección detectada en la simulación: con a=0, b=1, **k iteraciones dejan
+> b = F(k+1)**; por eso el bucle se ejecuta **n−1 veces** (n = 0 y n = 1 salen
+> antes del bucle).
 
 | Paso | Operación | Fuente | ALU | Muxes | wr/clear/addr | Destino | Resultado |
 |---|---|---|---|---|---|---|---|
@@ -356,21 +363,25 @@ n=5 ⇒ 1×2=2, ×3=6, ×4=24, ×5=120 ✓. n=1 ⇒ salta en 41 ⇒ 1 ✓.
 | 100 | Acc←n | EXT1 | — | SS=00 | wr_acc | Acc | n |
 | 101 | R1←Acc | — | — | — | wr_rf, addr=1 | R1 | n |
 | 102 | Acc←0 | — | — | SS=00 | clear | Acc | 0 |
-| 103 | Acc←0−R1 | 0, R1 | 010 A−B | SS=11, SI=0 | wr_acc, addr=1 | Acc | 0 si n=0; **si cero → paso 114** |
-| 104 | Acc←a | R2 | — | SS=10 | wr_acc, addr=2 | Acc | a |
-| 105 | Acc←a+b | R3 | 001 A+B | SS=11, SI=0 | wr_acc, addr=3 | Acc | next |
-| 106 | R4←Acc | — | — | — | wr_rf, addr=4 | R4 | next |
-| 107 | Acc←b | R3 | — | SS=10 | wr_acc, addr=3 | Acc | b |
-| 108 | R2←Acc | — | — | — | wr_rf, addr=2 | R2 | a′ = b |
-| 109 | Acc←next | R4 | — | SS=10 | wr_acc, addr=4 | Acc | next |
-| 110 | R3←Acc | — | — | — | wr_rf, addr=3 | R3 | b′ = next |
-| 111 | Acc←n | R1 | — | SS=10 | wr_acc, addr=1 | Acc | n |
-| 112 | Acc←n−1 | Acc | 100 A−1 | SS=11, SI=0 | wr_acc | Acc | n−1; **si cero → paso 115** |
-| 113 | R1←Acc | — | — | — | wr_rf, addr=1; **salta → 104** | R1 | n nuevo |
-| 114 | Acc←a | R2 | — | SS=10 | wr_acc, out_en | Acc | **F(0)** (fin) |
-| 115 | Acc←b | R3 | — | SS=10 | wr_acc, out_en | Acc | **F(n)** (fin) |
+| 103 | Acc←0−R1 | 0, R1 | 010 A−B | SS=11, SI=0 | wr_acc, addr=1 | Acc | 0 si n=0; **si cero → paso 117** |
+| 104 | Acc←n | R1 | — | SS=10 | wr_acc, addr=1 | Acc | n |
+| 105 | Acc←n−1 | Acc | 100 A−1 | SS=11, SI=0 | wr_acc | Acc | n−1; **si cero → paso 118** (n=1) |
+| 106 | R1←Acc | — | — | — | wr_rf, addr=1 | R1 | veces = n−1 |
+| 107 | Acc←a | R2 | — | SS=10 | wr_acc, addr=2 | Acc | a |
+| 108 | Acc←a+b | R3 | 001 A+B | SS=11, SI=0 | wr_acc, addr=3 | Acc | next |
+| 109 | R4←Acc | — | — | — | wr_rf, addr=4 | R4 | next |
+| 110 | Acc←b | R3 | — | SS=10 | wr_acc, addr=3 | Acc | b |
+| 111 | R2←Acc | — | — | — | wr_rf, addr=2 | R2 | a′ = b |
+| 112 | Acc←next | R4 | — | SS=10 | wr_acc, addr=4 | Acc | next |
+| 113 | R3←Acc | — | — | — | wr_rf, addr=3 | R3 | b′ = next |
+| 114 | Acc←R1 | R1 | — | SS=10 | wr_acc, addr=1 | Acc | contador |
+| 115 | Acc←cnt−1 | Acc | 100 A−1 | SS=11, SI=0 | wr_acc | Acc | cnt−1; **si cero → paso 118** |
+| 116 | R1←Acc | — | — | — | wr_rf, addr=1; **salta → 107** | R1 | contador nuevo |
+| 117 | Acc←a | R2 | — | SS=10 | wr_acc, out_en | Acc | **F(0)** (fin) |
+| 118 | Acc←b | R3 | — | SS=10 | wr_acc, out_en | Acc | **F(n)** (fin) |
 
-n=0 ⇒ paso 103 → 114 ⇒ 0 ✓. n=7 ⇒ 7 iteraciones ⇒ 13 ✓.
+n=0 ⇒ paso 103 → 117 ⇒ 0 ✓. n=1 ⇒ paso 105 → 118 ⇒ 1 ✓.
+n=7 ⇒ bucle de 6 iteraciones ⇒ 13 ✓.
 
 ### 8.5 Señales de entrada externa (`EXT1`) por paso
 
