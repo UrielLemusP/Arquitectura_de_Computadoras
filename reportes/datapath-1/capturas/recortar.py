@@ -47,6 +47,20 @@ def recortar(ruta):
         if fila_con_onda(y):
             ultimo = y
             break
+    # 2b) excluir filas "activas" aisladas abajo (thrash de una sola columna):
+    _, active = [], []
+    for y in range(miny, ultimo + 1):
+        if fila_con_onda(y):
+            active.append(y)
+    if active:
+        # último grupo contiguo de filas activas (tolerancia 3 px)
+        fin = active[-1]
+        for y in range(ultimo, miny, -1):
+            consec = [a for a in active if abs(a - y) <= 3]
+            if len(consec) >= 4:
+                fin = max(consec)
+                break
+        ultimo = fin
 
     # 3) recorte al contenido + margen blanco uniforme
     contenido = im.crop((minx, miny, maxx + 1, ultimo + 1))
