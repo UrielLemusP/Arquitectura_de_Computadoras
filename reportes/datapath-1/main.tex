@@ -62,9 +62,13 @@ Benemérita Universidad Autónoma de Puebla, Puebla, México\\
 % RESUMEN  (< 100 palabras — fuente 9pt con sangría, estilo llncs)
 % ============================================================
 \begin{abstract}
-Resumen. Escribe aquí la síntesis del trabajo en \textbf{menos de 100
-palabras}: objetivo, metodología (GHDL/GTKWave, VHDL-2008) y resultado
-principal.
+Resumen. Se diseña y verifica por simulación un datapath de 8~bits con MUX
+de entrada, ALU de tres operaciones ($n+x$, $2n+x$, $n+1$), registro con
+carga realimentado a la ALU y buffer tri-estado de salida. El circuito se
+describe en VHDL-2008 y se valida con cinco bancos de prueba autochequeados
+en GHDL, analizando las ondas con GTKWave. Bajo el modelo especificado, las
+operaciones, la carga, la retención con $L=0$ y la alta impedancia se
+comportan como se esperaba; la aritmética es módulo $2^8$ sin banderas.
 \end{abstract}
 
 \noindent\textbf{Palabras Clave:} Arquitectura de Computadoras, Datapath,
@@ -87,7 +91,6 @@ las operaciones~\cite{hamacher2002co}. Las implementaciones de referencia de
 ciclo único ilustran exactamente esta separación: un datapath formado por
 MUX, ALU y registros, gobernado por una unidad de control que genera una
 palabra de control por ciclo~\cite{patterson2017cod,bryant2015csapp}.
-
 El crecimiento sostenido del número de transistores~\cite{wiki-moore} ha
 desplazado buena parte del esfuerzo de diseño hacia la descripción y la
 verificación automatizadas: antes de construir, el circuito se modela en un
@@ -509,16 +512,66 @@ en la Sección~\ref{sec:resultados}.
 \section{Simulaciones de VHDL}
 \label{sec:simulaciones}
 
-Capturas de los módulos más importantes (máximo 2 hojas). Exporta las ondas
-de \texttt{vhdl/datapath-1/salidas/*.vcd} a PNG en \texttt{figuras/}.
+Las capturas que siguen se obtuvieron ejecutando los bancos de prueba con
+\texttt{scripts/vhdl-sim datapath-1 <tb>}, que vuelca las ondas en
+\texttt{vhdl/datapath-1/salidas/<tb>.vcd}, y abriéndolas después en GTKWave
+mediante un script Tcl que fija el orden de las señales y exporta el PNG a
+\texttt{figuras/}. Los valores que se leen en las ondas coinciden con las
+aserciones del banco de prueba correspondiente.
 
-% Descomenta el bloque cuando exista la captura en figuras/
-% \begin{figure}[t]
-%   \centering
-%   \includegraphics[width=0.9\textwidth]{figuras/captura_modulo.png}
-%   \caption{Simulación de <módulo>: descripción breve de lo que se observa.}
-%   \label{fig:captura}
-% \end{figure}
+La Fig.~\ref{fig:ondas-datapath} muestra la
+simulación de mayor interés: la del datapath completo, con las señales
+\texttt{clk}, \texttt{rst}, \texttt{dato\_ext}, \texttt{cw}, \texttt{f\_alu},
+\texttt{q\_reg} y \texttt{salida}. Se distinguen tres tramos. En el primero
+($\approx$0--45~ns), tras el reinicio, el ciclo 1 aplica
+\texttt{CW=111000} ($n+x$): \texttt{f\_alu} pasa a \texttt{0x05} de forma
+combinacional y, en el flanco, \texttt{q\_reg} y \texttt{salida} se
+actualizan a \texttt{0x05}; en el ciclo 2, \texttt{CW=111001} ($2n+x$)
+lleva \texttt{f\_alu} a \texttt{0x0F} y el registro a \texttt{0x0F}. El
+tramo central ($\approx$50--65~ns) es la prueba discriminante: con
+\texttt{CW=100010} ($L=0$, $n+1$) la ALU calcula \texttt{f\_alu=0x10}, pero
+\texttt{q\_reg} y \texttt{salida} permanecen en \texttt{0x0F} incluso
+después del flanco, porque el registro no carga. El tercer tramo
+($\approx$100--170~ns) muestra la carga de \texttt{dato\_ext=0x3C} con
+\texttt{CW=011000} ($\mathtt{O.E}=0$, \texttt{salida} en alta impedancia),
+su lectura posterior con \texttt{CW=100000} y, por último, \texttt{n+1} con
+\texttt{CW=110010}, que lleva el registro a \texttt{0x3D}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figuras/tb-datapath-ondas.png}
+  \caption{Simulación del datapath completo (\texttt{tb\_datapath}). Se
+  aprecia la actualización de \texttt{q\_reg} y \texttt{salida} solo en los
+  flancos con \texttt{L}=1 y, en el tramo central, que con \texttt{L}=0 la
+  salida no sigue a \texttt{f\_alu}: la salida proviene del registro.}
+  \label{fig:ondas-datapath}
+\end{figure}
+
+La Fig.~\ref{fig:ondas-alu} presenta la simulación de la ALU con las dos
+instancias del banco de prueba (8 y 4~bits comparten el mismo código
+\texttt{c}). Se observa el barrido de las tres operaciones ---suma
+(\texttt{c=000}), doble y suma (\texttt{c=001}) e incremento
+(\texttt{c=010})---, los casos de desbordamiento (por ejemplo,
+\texttt{0xFF+0x01=0x00}, \texttt{0xC8}$\ll$1\texttt{=0x90} y
+\texttt{0xFF+0x01=0x00} con \texttt{c=010}), los cinco códigos reservados,
+que devuelven \texttt{0x00}, y las comprobaciones con \texttt{ANCHO}=4
+(\texttt{3+1=4}, \texttt{9}$\ll$1\texttt{=2} y \texttt{15+1=0}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figuras/tb-alu-ondas.png}
+  \caption{Simulación de la ALU (\texttt{tb\_alu}) en 8~bits (\texttt{a8},
+  \texttt{b8}, \texttt{f8}) y 4~bits (\texttt{a4}, \texttt{b4},
+  \texttt{f4}). El código \texttt{c} recorre las operaciones, los
+  desbordamientos y los códigos reservados.}
+  \label{fig:ondas-alu}
+\end{figure}
+
+Otras dos capturas, no incluidas por límite de espacio, confirman los
+bloques restantes: \texttt{tb\_mux\_entrada} muestra la salida siguiendo el
+selector entre la constante cero y el dato externo (con anchos 8 y 4), y
+\texttt{tb\_buffer\_salida} muestra la salida en alta impedancia cuando
+\texttt{oe}=0 y el dato cuando \texttt{oe}=1.
 
 % ============================================================
 % 5. RESULTADOS  (3–5 cuartillas)
@@ -526,9 +579,167 @@ de \texttt{vhdl/datapath-1/salidas/*.vcd} a PNG en \texttt{figuras/}.
 \section{Resultados}
 \label{sec:resultados}
 
-Análisis de las simulaciones: tablas comparativas, tiempos, comportamiento
-observado, cumplimiento de las pruebas (assert). Interpretación crítica.
-(3--5 cuartillas.)
+\subsection{Ejecución de los bancos de prueba}
+
+Los cinco bancos de prueba se ejecutaron con el script
+\texttt{vhdl-sim} del repositorio y todos terminaron con el
+mensaje de éxito, sin que se disparase ninguna aserción
+(Tabla~\ref{tab:tbs}). El instante final es el del \texttt{report ... OK},
+que depende del número de estímulos de cada banco y no de un tiempo de
+simulación impuesto por la herramienta, ya que el reloj se genera dentro
+del propio proceso estimulador.
+
+\begin{table}[t]
+  \centering
+  \caption{Resultado de la ejecución de los cinco bancos de prueba
+  (\texttt{scripts/vhdl-sim datapath-1 <tb>}).}
+  \label{tab:tbs}
+  \footnotesize
+  \begin{tabular}{llcl}
+    \hline
+    Banco de prueba & Módulo bajo prueba & Fin & Resultado \\
+    \hline
+    \texttt{tb\_mux\_entrada}  & \texttt{mux\_entrada}  & 60~ns  & OK \\
+    \texttt{tb\_registro}      & \texttt{registro}      & 50~ns  & OK \\
+    \texttt{tb\_buffer\_salida}& \texttt{buffer\_salida}& 40~ns  & OK \\
+    \texttt{tb\_alu}           & \texttt{alu}           & 250~ns & OK (27 aserciones) \\
+    \texttt{tb\_datapath}      & \texttt{datapath}      & 170~ns & OK \\
+    \hline
+  \end{tabular}
+\end{table}
+
+También se verificó el análisis de todas las fuentes y bancos de prueba
+con \texttt{scripts/vhdl-analizar datapath-1} (cinco fuentes y cinco
+bancos), sin mensajes de error de GHDL~4.1.0 con el estándar
+\texttt{--std=08}. La integración continua del repositorio reproduce esta
+misma batería.
+
+\subsection{Operaciones de la ALU}
+
+La Tabla~\ref{tab:res-alu} recoge, para una muestra representativa de los
+27~casos comprobados, el valor de los operandos, el código y el resultado
+observado, con el resultado matemático de referencia. Los tres
+desbordamientos documentados en la Sección~\ref{sec:decisiones} se
+manifiestan como envolvura módulo $2^8$: $200+100$ da \texttt{0x2C} (=~44),
+porque $300 \bmod 256 = 44$; doblar $200$ da \texttt{0x90} (=~144),
+porque $400 \bmod 256 = 144$; y $255+1$ da \texttt{0x00}. Ninguno de estos
+casos es un fallo del modelo, sino la consecuencia de trabajar sin banderas
+de acarreo ni de desbordamiento.
+
+\begin{table}[t]
+  \centering
+  \caption{Resultados de la ALU observados en \texttt{tb\_alu}
+  (extracto de los 27~casos; 8~bits salvo indicación).}
+  \label{tab:res-alu}
+  \footnotesize
+  \begin{tabular}{cccccl}
+    \hline
+    $C$ & $A$ & $B=n$ & $F$ observado & Referencia & Observación \\
+    \hline
+    \texttt{000} & \texttt{0A} & \texttt{05} & \texttt{0F} & $5+10=15$ & $n+x$ \\
+    \texttt{000} & \texttt{3C} & \texttt{00} & \texttt{3C} & $x+0$ & carga de $x$ \\
+    \texttt{001} & \texttt{0A} & \texttt{05} & \texttt{14} & $2\cdot5+10=20$ & $2n+x$ \\
+    \texttt{001} & \texttt{00} & \texttt{7F} & \texttt{FE} & $2\cdot127=254$ & límite exacto \\
+    \texttt{010} & \texttt{A5} & \texttt{05} & \texttt{06} & $5+1=6$ & ignora $A$ \\
+    \texttt{000} & \texttt{64} & \texttt{C8} & \texttt{2C} & $300 \bmod 256$ & \textbf{envoltura} ($=44$) \\
+    \texttt{001} & \texttt{00} & \texttt{C8} & \texttt{90} & $400 \bmod 256$ & \textbf{envoltura} ($=144$) \\
+    \texttt{010} & \texttt{00} & \texttt{FF} & \texttt{00} & $256 \bmod 256$ & \textbf{envoltura} \\
+    \texttt{011}--\texttt{111} & \texttt{5A} & \texttt{A5} & \texttt{00} & reservado & valor por defecto \\
+    \hline
+    \multicolumn{6}{l}{\emph{Instancia con \texttt{ANCHO}=4:}}\\
+    \texttt{000} & \texttt{0011} & \texttt{0001} & \texttt{0100} & $3+1=4$ & $n+x$ \\
+    \texttt{001} & \texttt{0000} & \texttt{1001} & \texttt{0010} & $18 \bmod 16$ & $2n+x$ ($=2$) \\
+    \texttt{010} & \texttt{0000} & \texttt{1111} & \texttt{0000} & $16 \bmod 16$ & \textbf{envoltura} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Palabras de control en el datapath}
+
+La Tabla~\ref{tab:res-cw} contrasta, para cada palabra de control
+empleada, el resultado esperado con el observado en \texttt{tb\_datapath}.
+Las filas de los ciclos 1 y 2 corresponden al ejemplo de tres ciclos de la
+Sección~\ref{sec:alu-op}; la prueba discriminante (\texttt{CW=100010})
+confirma que con \texttt{L}=0 la salida externa conserva el valor del
+registro y no adopta el nuevo resultado de la ALU. La carga con
+\texttt{CW=011000} muestra además la alta impedancia cuando
+$\mathtt{O.E}=0$.
+
+\begin{table}[t]
+  \centering
+  \caption{Resultados del datapath observados en \texttt{tb\_datapath}
+  (valores en hexadecimal).}
+  \label{tab:res-cw}
+  \footnotesize
+  \begin{tabular}{ccccccc}
+    \hline
+    \texttt{CW} & $F_{ALU}$ esp. & $F_{ALU}$ obs. &
+      $Q$ esp. & $Q$ obs. & \texttt{salida} & Observación \\
+    \hline
+    \texttt{111000} & \texttt{05} & \texttt{05} & \texttt{05} &
+      \texttt{05} & \texttt{05} & $n+x$ guardado \\
+    \texttt{111001} & \texttt{0F} & \texttt{0F} & \texttt{0F} &
+      \texttt{0F} & \texttt{0F} & $2n+x$ guardado \\
+    \texttt{100010} & \texttt{10} & \texttt{10} & \texttt{0F} &
+      \texttt{0F} & \texttt{0F} & $L=0$: salida $=$ registro \\
+    \texttt{100000} & \texttt{0F} & \texttt{0F} & \texttt{0F} &
+      \texttt{0F} & \texttt{0F} & conservar y mostrar \\
+    \texttt{011000} & \texttt{3C} & \texttt{3C} & \texttt{3C} &
+      \texttt{3C} & \texttt{Z} & carga con $\mathtt{O.E}=0$ \\
+    \texttt{110010} & \texttt{3D} & \texttt{3D} & \texttt{3D} &
+      \texttt{3D} & \texttt{3D} & $n+1$ guardado \\
+    \hline
+  \end{tabular}
+\end{table}
+
+En todos los casos el valor observado de $F_{ALU}$ y el del registro tras
+el flanco coinciden con el esperado. El interés de la fila
+\texttt{100010} es que el registro y la ALU divergen deliberadamente:
+$F_{ALU}=\texttt{0x10}$, pero $Q=\texttt{salida}=\texttt{0x0F}$, lo que
+valida la corrección de diseño de la §\ref{sec:arquitectura} (la salida
+sale del registro).
+
+\subsection{Comportamiento temporal}
+
+Del análisis de las ondas (Fig.~\ref{fig:ondas-datapath}) se desprenden
+dos observaciones. Primero, la latencia del resultado es de un flanco:
+cuando \texttt{L}=1, el valor nuevo de $F_{ALU}$ está disponible de forma
+combinacional en el mismo ciclo, pero solo se hace visible en \texttt{salida}
+tras el flanco de subida, porque atraviesa el registro. Segundo, la salida
+combinacional de la ALU ($F_{ALU}$) sí puede cambiar en cualquier momento
+del ciclo al variar $A$, $B$ o $C$; por eso se expone como salida de
+observación \texttt{f\_alu}, separada de la salida externa. El diseño
+resulta así coherente con la separación entre la parte combinacional y la
+secuencial, y con el modelo de la §\ref{sec:arquitectura}.
+
+En cuanto a coste, y sin entrar en síntesis (el flujo es solo simulación),
+el datapath resuelve cada micro-operación en un único ciclo de reloj,
+salvo la secuencia de inicialización que requiere un \texttt{rst} previo
+para poder cargar \texttt{dato\_ext} con $B=0$. No hay por tanto
+subsidios de varios ciclos ni \emph{overhead} de una máquina de estados,
+a cambio de que la secuencia la deba aportar el entorno externo; desde la
+perspectiva de las métricas de rendimiento clásicas, el tiempo de
+ejecución de una secuencia es proporcional al número de palabras de
+control aplicadas~\cite{stallings2015coa,hennessy2017qa}.
+
+\subsection{Discusión}
+
+Los resultados confirman el funcionamiento previsto y, al mismo tiempo,
+delimitan las limitaciones que ya se anticiparon en el diseño. La más
+importante es la aritmética silenciosa: al no haber banderas, el modelo no
+distingue un resultado correcto de uno envuelto, de modo que la validez de
+$2n+x$ y de $n+x$ queda condicionada a los rangos indicados en la
+Sección~\ref{sec:decisiones} ($n \le 127$ para doblar sin pérdida, y
+$2n+x \le 255$ en 8~bits). La segunda es la imposibilidad de cargar
+$A$ sobre un registro con $B \neq 0$ usando solo las tres operaciones
+pedidas; se resuelve con el reinicio, que es una decisión de diseño
+adicional y no un elemento del esquema original. Por último, la
+codificación binaria de la ALU es provisional: el comportamiento del
+modelo es correcto \emph{bajo esa codificación}, pero si el material del
+curso fija otra, habría que reejustar la tabla y repetir la verificación.
+Los bancos de prueba están escritos de forma que ese cambio afectaría solo
+a la tabla de la §\ref{sec:alu-op} y a los estímulos de \texttt{tb\_alu} y
+\texttt{tb\_datapath}.
 
 % ============================================================
 % 6. CONCLUSIONES  (1 cuartilla)
@@ -536,8 +747,43 @@ observado, cumplimiento de las pruebas (assert). Interpretación crítica.
 \section{Conclusiones}
 \label{sec:conclusiones}
 
-Cierre: logros frente a los objetivos, limitaciones y trabajo futuro.
-(1 cuartilla.)
+Se diseñó y verificó por simulación el Datapath 1: una ruta de datos de
+8~bits parametrizable, compuesta por un MUX $2\to1$, una ALU de tres
+operaciones, un registro con carga y un buffer tri-estado de salida,
+integrados de forma estructural y realimentados del registro hacia la ALU.
+Los cinco objetivos planteados en la introducción se cumplieron: los
+módulos se describieron en VHDL-2008 con ancho parametrizable, se
+integraron en una entidad estructural, se verificaron con cinco bancos de
+prueba autochequeados y se analizó su comportamiento temporal a partir de
+las ondas de GTKWave.
+
+El resultado principal es una ruta de datos correcta bajo el modelo
+especificado: las tres operaciones ($n+x$, $2n+x$ y $n+1$), la carga del
+registro, la retención con \texttt{L}=0 y la alta impedancia con
+$\mathtt{O.E}=0$ se comportan como se esperaba, incluidos los casos de
+desbordamiento documentados. La decisión de diseño que separa el resultado
+combinacional de la ALU ($F_{ALU}$) del valor almacenado ($Q$) quedó
+validada por la prueba discriminante con \texttt{CW=100010}: con la carga
+deshabilitada, la salida externa no sigue a la ALU.
+
+Las principales limitaciones son tres y quedan documentadas: los
+desbordamientos son silenciosos al no modelarse banderas; solo las tres
+operaciones pedidas están implementadas, de modo que cargar el operando
+externo sobre un registro no nulo exige un reinicio previo; y la
+codificación binaria de la ALU y el formato exacto de la palabra de control
+son una propuesta del equipo mientras no se disponga de la codificación
+original. El modelo es, además, una descripción para simulación: el
+backend \texttt{mcode} de GHDL no realiza síntesis, por lo que la
+sintetizabilidad no se ha evaluado.
+
+Como trabajo futuro inmediato cabe refactorizar tan pronto como se
+disponga de la codificación real del curso (una rama por cambio, según el
+flujo del repositorio), añadir banderas de acarreo y de cero preservando
+la realimentación, y dotar al datapath de una unidad de control mínima
+---una máquina de estados de estilo Moore o Mealy--- que genere la
+secuencia de palabras de control que aquí aplica el banco de prueba. Con
+esa unidad, el bloque pasaría de ser una ruta de datos gobernada desde
+fuera a formar parte de un procesador de ciclo único completo.
 
 % ============================================================
 % REFERENCIAS  (>= 15 — indicar exactamente dónde aparece el texto)
@@ -555,15 +801,216 @@ Cierre: logros frente a los objetivos, limitaciones y trabajo futuro.
 \section{Código VHDL}
 \label{app:codigo}
 
-Código completo de los módulos de la unidad (copiado de
-\texttt{vhdl/datapath\-1/src/}). Usa \texttt{lstlisting}:
+Se reproduce a continuación el código completo de los módulos de la
+unidad que se han verificado en este informe.
 
-% Sustituye por el código real de cada módulo de la unidad.
-% \begin{lstlisting}[caption={sumador.vhd --- <descripción>}, label=lst:sumador]
-% library ieee;
-% use ieee.std_logic_1164.all;
-% use ieee.numeric_std.all;
-% ...
-% \end{lstlisting}
+\begin{lstlisting}[caption={\texttt{mux\_entrada.vhd} --- MUX $2\to1$ de
+  entrada}, label=lst:mux]
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity mux_entrada is
+    generic (
+        ANCHO : natural := 8
+    );
+    port (
+        dato_ext : in  std_logic_vector(ANCHO - 1 downto 0);
+        sel      : in  std_logic;
+        y        : out std_logic_vector(ANCHO - 1 downto 0)
+    );
+end entity;
+
+architecture comportamental of mux_entrada is
+begin
+    y <= dato_ext when sel = '1' else (others => '0');
+end architecture;
+\end{lstlisting}
+
+\begin{lstlisting}[caption={\texttt{alu.vhd} --- ALU con las tres
+  operaciones y códigos reservados a cero}, label=lst:alu]
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity alu is
+    generic (
+        ANCHO : natural := 8
+    );
+    port (
+        a : in  std_logic_vector(ANCHO - 1 downto 0);
+        b : in  std_logic_vector(ANCHO - 1 downto 0);
+        c : in  std_logic_vector(2 downto 0);
+        f : out std_logic_vector(ANCHO - 1 downto 0)
+    );
+end entity;
+
+architecture comportamental of alu is
+begin
+    process (a, b, c)
+    begin
+        case c is
+            when "000" =>
+                -- suma: n+x (A=x) o n (A=0); con B=0 y A=x sirve para cargar
+                f <= std_logic_vector(unsigned(a) + unsigned(b));
+            when "001" =>
+                -- desplazamiento logico de B a la izquierda y suma: 2n+x
+                f <= std_logic_vector(shift_left(unsigned(b), 1) + unsigned(a));
+            when "010" =>
+                -- incremento de B: n+1 (A no participa)
+                f <= std_logic_vector(unsigned(b) + 1);
+            when others =>
+                -- reservado (011..111): F = 0 provisional
+                f <= (others => '0');
+        end case;
+    end process;
+end architecture;
+\end{lstlisting}
+
+\begin{lstlisting}[caption={\texttt{registro.vhd} --- registro con carga y
+  reinicio síncrono}, label=lst:registro-ap]
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity registro is
+    generic (
+        ANCHO : natural := 8
+    );
+    port (
+        clk : in  std_logic;
+        rst : in  std_logic;
+        l   : in  std_logic;
+        d   : in  std_logic_vector(ANCHO - 1 downto 0);
+        q   : out std_logic_vector(ANCHO - 1 downto 0)
+    );
+end entity;
+
+architecture comportamental of registro is
+    signal contenido : std_logic_vector(ANCHO - 1 downto 0) := (others => '0');
+begin
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if rst = '1' then
+                contenido <= (others => '0');
+            elsif l = '1' then
+                contenido <= d;
+            end if;
+        end if;
+    end process;
+
+    q <= contenido;
+end architecture;
+\end{lstlisting}
+
+\begin{lstlisting}[caption={\texttt{buffer\_salida.vhd} --- buffer
+  tri-estado con habilitación}, label=lst:buffer-ap]
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity buffer_salida is
+    generic (
+        ANCHO : natural := 8
+    );
+    port (
+        d_in : in  std_logic_vector(ANCHO - 1 downto 0);
+        oe   : in  std_logic;
+        y    : out std_logic_vector(ANCHO - 1 downto 0)
+    );
+end entity;
+
+architecture comportamental of buffer_salida is
+begin
+    y <= d_in when oe = '1' else (others => 'Z');
+end architecture;
+\end{lstlisting}
+
+\begin{lstlisting}[caption={\texttt{datapath.vhd} --- integración
+  estructural, desempaquetado de \texttt{cw} y realimentación}, label=lst:datapath-ap]
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity datapath is
+    generic (
+        ANCHO : natural := 8
+    );
+    port (
+        clk      : in  std_logic;
+        rst      : in  std_logic;
+        dato_ext : in  std_logic_vector(ANCHO - 1 downto 0);
+        cw       : in  std_logic_vector(5 downto 0);
+        salida   : out std_logic_vector(ANCHO - 1 downto 0);
+        f_alu    : out std_logic_vector(ANCHO - 1 downto 0);
+        q_reg    : out std_logic_vector(ANCHO - 1 downto 0)
+    );
+end entity;
+
+architecture estructural of datapath is
+    component mux_entrada is
+        generic (ANCHO : natural := 8);
+        port (dato_ext : in  std_logic_vector(ANCHO - 1 downto 0);
+              sel      : in  std_logic;
+              y        : out std_logic_vector(ANCHO - 1 downto 0));
+    end component;
+    component alu is
+        generic (ANCHO : natural := 8);
+        port (a : in  std_logic_vector(ANCHO - 1 downto 0);
+              b : in  std_logic_vector(ANCHO - 1 downto 0);
+              c : in  std_logic_vector(2 downto 0);
+              f : out std_logic_vector(ANCHO - 1 downto 0));
+    end component;
+    component registro is
+        generic (ANCHO : natural := 8);
+        port (clk : in  std_logic; rst : in  std_logic; l : in  std_logic;
+              d   : in  std_logic_vector(ANCHO - 1 downto 0);
+              q   : out std_logic_vector(ANCHO - 1 downto 0));
+    end component;
+    component buffer_salida is
+        generic (ANCHO : natural := 8);
+        port (d_in : in  std_logic_vector(ANCHO - 1 downto 0);
+              oe   : in  std_logic;
+              y    : out std_logic_vector(ANCHO - 1 downto 0));
+    end component;
+
+    -- desempaquetado de la palabra de control
+    signal oe : std_logic;
+    signal l  : std_logic;
+    signal m  : std_logic;
+    signal c  : std_logic_vector(2 downto 0);
+
+    -- buses internos (replica del diagrama)
+    signal a_bus : std_logic_vector(ANCHO - 1 downto 0);  -- MUX -> ALU
+    signal b_bus : std_logic_vector(ANCHO - 1 downto 0);  -- Q -> ALU
+    signal f_bus : std_logic_vector(ANCHO - 1 downto 0);  -- ALU -> D
+    signal q_bus : std_logic_vector(ANCHO - 1 downto 0);  -- salida del reg.
+begin
+    oe <= cw(5);
+    l  <= cw(4);
+    m  <= cw(3);
+    c  <= cw(2 downto 0);
+
+    -- realimentacion: Q es el operando B (n)
+    b_bus <= q_bus;
+
+    u_mux : mux_entrada
+        generic map (ANCHO => ANCHO)
+        port map (dato_ext => dato_ext, sel => m, y => a_bus);
+
+    u_alu : alu
+        generic map (ANCHO => ANCHO)
+        port map (a => a_bus, b => b_bus, c => c, f => f_bus);
+
+    u_registro : registro
+        generic map (ANCHO => ANCHO)
+        port map (clk => clk, rst => rst, l => l, d => f_bus, q => q_bus);
+
+    u_buffer : buffer_salida
+        generic map (ANCHO => ANCHO)
+        port map (d_in => q_bus, oe => oe, y => salida);
+
+    -- salidas de observacion (testbenches y capturas)
+    f_alu <= f_bus;
+    q_reg <= q_bus;
+end architecture;
+\end{lstlisting}
 
 \end{document}
