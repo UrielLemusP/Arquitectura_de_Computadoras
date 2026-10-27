@@ -215,58 +215,10 @@ habilitado por \texttt{O.E} hasta la salida externa. Los pulsos
 \texttt{clk} y \texttt{rst} alimentan al registro y son decisión de
 diseño: la fotografía del material de clase no etiqueta un reloj.
 
-\begin{figure}[t]
+\begin{figure}[htbp]
   \centering
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}[
-      >=Stealth,
-      blk/.style={draw, fill=gray!12, rounded corners=1pt,
-                  minimum width=22mm, minimum height=13mm,
-                  align=center, font=\small},
-      wire/.style={->, thick},
-      cwire/.style={->, thick, dashed},
-      lab/.style={font=\small, inner sep=1.5pt}
-    ]
-    % ---- cadena de datos
-    \node[blk] (mux) at (0,0)   {MUX\\ $2\to1$};
-    \node[blk] (alu) at (3.6,0) {ALU};
-    \node[blk] (reg) at (7.2,0) {REGISTRO};
-    \node[blk] (buf) at (10.8,0) {BUFFER\\ tri-estado};
-    \node[lab, right=7mm of buf, font=\small\bfseries] (sal) {SALIDA};
-
-    \node[lab, left=12mm of mux] (dext) {\texttt{dato\_ext}};
-    \node[lab, below=4mm of dext] (cero) {constante $0$};
-
-    \draw[wire] (dext) -- (mux);
-    \draw[wire] (cero) -- (mux);
-    \draw[wire] (mux) -- node[lab, above] {$A$} (alu);
-    \draw[wire] (alu) -- node[lab, above] {$F_{ALU}=D$} (reg);
-    \draw[wire] (reg) -- node[lab, above] {$Q$} (buf);
-    \draw[wire] (buf) -- (sal);
-
-    % ---- realimentación Q -> B
-    \draw[wire] (reg.south) -- ++(0,-11mm) -- node[lab, below] {$B=Q$}
-                ++(-3.6,0) -- (alu.south);
-
-    % ---- bus de control
-    \draw[very thick] (-1.5,2.9) -- (10.8,2.9);
-    \node[lab, above=3pt, font=\small] at (4.65,2.9)
-      {CW $=$ [\texttt{O.E}, \texttt{L}, \texttt{M},
-       \texttt{C2}, \texttt{C1}, \texttt{C0}]};
-    \draw[cwire] (0,2.9) -- node[lab, left] {$M$}  (0,0.65);
-    \draw[cwire] (3.6,2.9) -- node[lab, left] {$C$}  (3.6,0.65);
-    \draw[cwire] (7.2,2.9) -- node[lab, left] {$L$}  (7.2,0.65);
-    \draw[cwire] (10.8,2.9) -- node[lab, left]
-      {$\mathtt{O.E}$} (10.8,0.65);
-
-    % ---- clk y rst
-    \node[lab] (clkrst) at (9.9,-1.5) {\texttt{clk}, \texttt{rst}};
-    \draw[cwire] (clkrst.west) -- (reg.south east);
-  \end{tikzpicture}}
-  \caption{Arquitectura del Datapath 1 (elaboración propia a partir del
-  material del curso): la palabra de control \texttt{cw} distribuye
-  \texttt{O.E}, \texttt{L}, \texttt{M} y \texttt{C[2:0]}; la salida externa
-  proviene del registro, nunca directamente de la ALU.}
+  \includegraphics[width=0.70\textwidth,height=0.57\textheight,keepaspectratio]{figuras/arquitectura_datapath.png}
+  \caption{Diagrama del Datapath 1 proporcionado para la practica: MUX de entrada, ALU, registro con realimentacion hacia B y buffer de salida controlado por O.E.}
   \label{fig:arquitectura}
 \end{figure}
 
