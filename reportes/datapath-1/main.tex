@@ -453,9 +453,12 @@ necesario.
     Sección~\ref{sec:resultados}.
   \item \textbf{Sin FSM, sin shifter externo}: únicamente los módulos del
     esquema del curso más \texttt{clk} y \texttt{rst}.
-  \item \textbf{Solo simulación}: el GHDL empleado usa el backend
-    \texttt{mcode}, que no ofrece síntesis; no se afirma por tanto
-    sintetizabilidad, únicamente comportamiento simulado~\cite{ghdl-docs}.
+  \item \textbf{Solo simulación}: todas las fuentes se verificaron
+    \emph{exclusivamente} por simulación con GHDL (backend \texttt{mcode}).
+    GHDL dispone de un flujó experimental de síntesis
+    (\texttt{ghdl {-}{-}synth})~\cite{ghdl-docs}; en este proyecto no se
+    \emph{utilizó} ese flujo ni se evaluaron la síntesis ni la
+    implementación física, por lo que no se afirma sintetizabilidad.
 \end{itemize}
 
 % ============================================================
@@ -681,6 +684,16 @@ porque $400 \bmod 256 = 144$; y $255+1$ da \texttt{0x00}. Ninguno de estos
 casos es un fallo del modelo, sino la consecuencia de trabajar sin banderas
 de acarreo ni de desbordamiento.
 
+La instancia con \texttt{ANCHO}=4 (filas inferiores de la
+Tabla~\ref{tab:res-alu}) confirma que el \emph{generic} parametriza la
+ruta aritmética completa y no solo los anchos de los puertos. Las tres
+operaciones se repiten con operandos de 4~bits y los límites se desplazan
+de $2^8-1=255$ a $2^4-1=15$: $3+1=4$ cabe sin envolver, $2\cdot9=18 \equiv 2 \pmod{16}$ y $15+1=0$. El
+resultado observado coincide en los tres casos con la referencia
+matemática, lo que valida la parametrización del diseño sin cambios de
+descripción (es la misma entidad \texttt{alu} instanciada con otro valor
+del \emph{generic}).
+
 \begin{table}[t]
   \centering
   \caption{Resultados de la ALU observados en \texttt{tb\_alu}
@@ -769,6 +782,22 @@ observación \texttt{f\_alu}, separada de la salida externa. El diseño
 resulta así coherente con la separación entre la parte combinacional y la
 secuencial, y con el modelo de la §\ref{sec:arquitectura}.
 
+Las ventanas dedicadas a la ALU refuerzan la lectura combinacional.
+En la Fig.~\ref{fig:ondas-alu}, \texttt{f8} responde a cada cambio de
+\texttt{c8} o de los operandos en el instante exacto del cambio, sin
+esperar flanco de reloj alguno: la suma $100+200$ produce \texttt{0x2C},
+doblar $200$ produce \texttt{0x90} y el caso límite
+$255+1$ produce \texttt{0x00} en su correspondiente ventana. Por su
+parte, la Fig.~\ref{fig:alu-ancho4} recoge el mismo banco con
+\texttt{ANCHO}=4 en el tramo final: \texttt{c4} recorre el código
+reservado (\texttt{111}, con \texttt{f4}=0) y después las tres
+operaciones de la Tabla~\ref{tab:res-alu} ($3+1=4$; $2\cdot9 \equiv 2 \pmod{16}$; $15+1=0$), mientras la instancia de 8 bits sigue
+estimulada en paralelo con sus propios operandos (\texttt{f8} responde a
+sus estímulos en las mismas ventanas). Ambas ventanas ilustran, además,
+un rasgo del entorno de simulación: la regla temporal en nanosegundos y
+el escalado automático (\emph{zoom}) dependen de la herramienta, no del
+modelo VHDL de \texttt{vhdl/datapath-1}.
+
 En cuanto a coste, y sin entrar en síntesis (el flujo es solo simulación),
 el datapath resuelve cada micro-operación en un único ciclo de reloj,
 salvo la secuencia de inicialización que requiere un \texttt{rst} previo
@@ -830,18 +859,22 @@ operaciones pedidas están implementadas, de modo que cargar el operando
 externo sobre un registro no nulo exige un reinicio previo; y la
 codificación binaria de la ALU y el formato exacto de la palabra de control
 son una propuesta del equipo mientras no se disponga de la codificación
-original. El modelo es, además, una descripción para simulación: el
-backend \texttt{mcode} de GHDL no realiza síntesis, por lo que la
-sintetizabilidad no se ha evaluado.
+original. El modelo es, además, una descripción para simulación: los
+códigos se verificaron \emph{únicamente} por simulación; el flujo de
+síntesis experimental de GHDL (\texttt{ghdl {-}{-}synth}) no se empleó y
+la sintetizabilidad y la implementación física no se han evaluado.
 
 Como trabajo futuro inmediato cabe refactorizar tan pronto como se
 disponga de la codificación real del curso (una rama por cambio, según el
 flujo del repositorio), añadir banderas de acarreo y de cero preservando
 la realimentación, y dotar al datapath de una unidad de control mínima
 ---una máquina de estados de estilo Moore o Mealy--- que genere la
-secuencia de palabras de control que aquí aplica el banco de prueba. Con
-esa unidad, el bloque pasaría de ser una ruta de datos gobernada desde
-fuera a formar parte de un procesador de ciclo único completo.
+secuencia de palabras de control que aquí aplica el banco de prueba. Una
+unidad de control así ampliaría el funcionamiento del datapath (secuen-
+ciar microoperaciones sin seguir aplicando \texttt{cw} a mano), aunque por
+sí sola no bastaría para constituir un procesador completo: faltarían
+elementos propios de un procesador, como una memoria de instrucciones,
+un contador de programa y formateo/carga de la unidad de datos.
 
 % ============================================================
 % REFERENCIAS  (>= 15 — indicar exactamente dónde aparece el texto)
@@ -861,10 +894,12 @@ fuera a formar parte de un procesador de ciclo único completo.
 
 Se reproduce a continuación el código completo de los módulos de la
 unidad que se han verificado en este informe. Se inserta desde las copias
-de presentación guardadas en \texttt{apendice/}, con el contenido idéntico
-al VHDL funcional de \texttt{vhdl/datapath-1/src/} salvo los saltos de
-línea, ajustados a límites sintácticos para que las instrucciones se
-puedan leer y copiar sin ambigüedad.
+de presentación guardadas en \texttt{apendice/}, con el código idéntico
+al VHDL funcional de \texttt{vhdl/datapath-1/src/} (misma lógica, mismos
+recursos y mismos puertos) salvo los saltos de línea, ajustados a límites
+sintácticos para que las instrucciones se puedan leer y copiar sin
+ambigüedad, y los comentarios, reformateados al mismo ancho y redactados
+en términos técnicos neutros.
 
 \lstinputlisting[caption={\texttt{mux\_entrada.vhd} --- MUX $2\to1$ de
   entrada}, label=lst:mux]{apendice/mux_entrada.vhd}

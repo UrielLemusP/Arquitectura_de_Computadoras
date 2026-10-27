@@ -8,7 +8,7 @@
 #           vhdl/datapath-1/salidas/tb_alu.vcd
 # Genera reportes/datapath-1/figuras/tb-alu-ancho4.png
 # Tras el volcado, recortar con:
-#   python3 reportes/datapath-1/capturas/recortar.py \
+#   python3 reportes/datapath-1/capturas/recortar.py 115 \
 #           reportes/datapath-1/figuras/tb-alu-ancho4.png
 # ============================================================
 gtkwave::addSignalsFromList {

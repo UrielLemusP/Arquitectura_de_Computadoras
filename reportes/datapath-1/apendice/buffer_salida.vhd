@@ -1,9 +1,9 @@
 -- =======================================================
 -- Buffer tri-estado de salida del Datapath 1
--- Etiqueta de la foto: «O.E.» (Output Enable).
+-- Etiqueta del esquema del curso: «O.E.» (Output Enable).
 -- oe = '1' saca el dato; oe = '0' deja la salida en alta
--- impedancia. Nombre del puerto: decisión de diseño (la
--- foto solo muestra la etiqueta O.E.).
+-- impedancia. Nombre del puerto: decisión de diseño (el
+-- esquema solo muestra la etiqueta O.E.).
 -- =======================================================
 library ieee;
 use ieee.std_logic_1164.all;

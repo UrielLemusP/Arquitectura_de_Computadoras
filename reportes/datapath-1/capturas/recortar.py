@@ -5,21 +5,48 @@ inferior de las capturas de ondas del reporte datapath-1.
 GTKWave (v3.3.116) vuelca con /File/Grab_To_File la ventana completa,
 incluido el marco negro del gestor en esta sesión WSLg. Este script:
 
-  1. recorta al rectángulo no negro (elimina el marco),
-  2. recorta la altura al último renglón con actividad en el panel de
+  1. si se indica SUP > 0, descarta las SUP filas superiores (barra de
+     título y barra de herramientas, no pertinentes en el reporte),
+  2. recorta al rectángulo no negro (elimina el marco),
+  3. recorta la altura al último renglón con actividad en el panel de
      ondas (elimina el espacio en blanco sobrante),
-  3. deja un margen blanco uniforme.
+  4. deja un margen blanco uniforme.
 
-Uso:  python3 reportes/datapath-1/capturas/recortar.py <png_entrada>
+Uso:  python3 reportes/datapath-1/capturas/recortar.py <png_entrada> [SUP]
+Con GTKWave 3.3.116/WSLg, SUP=115 elimina cabecera y toolbar dejando la
+regla temporal completa. El árbol SST vacío de la izquierda se detecta y
+se elimina automáticamente (busca el primer separador vertical completo
+por debajo de la mitad izquierda).
 """
 import sys
 
 from PIL import Image
 
 
-def recortar(ruta):
+def es_marco(c):
+    return abs(c[0] - 205) < 12 and abs(c[1] - 199) < 12 and abs(c[2] - 194) < 12
+
+
+def recortar(ruta, sup=0):
     im = Image.open(ruta).convert("RGB")
     ancho, alto = im.size
+    if sup > 0:
+        im = im.crop((0, sup, ancho, alto))
+        alto = im.size[1]
+    px = im.load()
+
+    # 0) eliminar el árbol SST vacío: primer separador vertical completo
+    #    (color del marco) en la mitad izquierda => principio del panel
+    #    de nombres de señales
+    corte = 0
+    for x in range(int(alto * 0.10), ancho // 2):
+        n = sum(1 for y in range(0, alto, 2) if es_marco(px[x, y]))
+        if n > (alto // 2) * 0.9:
+            corte = x + 1
+            break
+    if corte:
+        im = im.crop((corte, 0, ancho, alto))
+        ancho, alto = im.size
     px = im.load()
 
     def negro(c):
@@ -74,6 +101,7 @@ def recortar(ruta):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("uso: recortar.py <png_entrada>")
-    recortar(sys.argv[1])
+    if not 2 <= len(sys.argv) <= 3:
+        sys.exit("uso: recortar.py <png_entrada> [filas_superior]")
+    sup = int(sys.argv[2]) if len(sys.argv) == 3 else 0
+    recortar(sys.argv[1], sup)

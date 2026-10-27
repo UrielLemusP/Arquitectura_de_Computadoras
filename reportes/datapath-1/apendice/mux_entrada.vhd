@@ -5,7 +5,7 @@
 -- sel: decisión de diseño provisional
 --      (polaridad modificable).
 -- dato_ext: nombre provisional
---      (el de la foto no se pudo leer).
+--      (la etiqueta del esquema no se leyó).
 -- =======================================================
 library ieee;
 use ieee.std_logic_1164.all;

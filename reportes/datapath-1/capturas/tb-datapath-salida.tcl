@@ -9,7 +9,7 @@
 #           vhdl/datapath-1/salidas/tb_datapath.vcd
 # Genera reportes/datapath-1/figuras/tb-datapath-salida.png
 # Tras el volcado, recortar con:
-#   python3 reportes/datapath-1/capturas/recortar.py \
+#   python3 reportes/datapath-1/capturas/recortar.py 115 \
 #           reportes/datapath-1/figuras/tb-datapath-salida.png
 # ============================================================
 gtkwave::addSignalsFromList {

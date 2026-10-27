@@ -21,8 +21,7 @@
 -- de los ficheros (scripts/vhdl-analizar).
 --
 -- f_alu y q_reg son salidas de observación para
--- testbenches y capturas de ondas
--- (igual que acc_q/rf_dout en datapath-3).
+-- testbenches y capturas de ondas.
 -- =======================================================
 library ieee;
 use ieee.std_logic_1164.all;

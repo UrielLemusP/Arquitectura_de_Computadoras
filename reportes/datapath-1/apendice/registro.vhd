@@ -1,13 +1,13 @@
 -- =======================================================
 -- Registro de datos del Datapath 1
 -- Almacena n (operando B de la ALU) y lo realimenta a la
--- ALU. Carga habilitada con l: nombre provisional «L» de
--- la foto (no se distinguió con absoluta certeza; mi
--- lectura inicial fue «W»). rst es decisión de diseño
--- adicional: no aparece en la foto y se añade para
--- inicializar B = 0 (necesario para cargar dato_ext con
--- op = 000). Reset síncrono con prioridad sobre l,
--- igual que el acumulador de datapath-3.
+-- ALU. Carga habilitada con l: nombre provisional tomado
+-- de la etiqueta «L» del esquema del curso. rst es
+-- decisión de diseño adicional: no aparece en el esquema
+-- y se añade para inicializar B = 0 (necesario para
+-- cargar dato_ext con op = 000). Reset síncrono con
+-- prioridad sobre l. La lógica equivale a un registro
+-- con habilitación y reinicio síncrono estándar.
 -- =======================================================
 library ieee;
 use ieee.std_logic_1164.all;

@@ -2,8 +2,8 @@
 -- ALU del Datapath 1
 -- Especificación de implementación propuesta por el
 -- equipo; los códigos NO están confirmados como
--- provenientes del profesor. Operaciones provisionales
--- acordadas:
+-- provenientes del material oficial del curso.
+-- Operaciones provisionales acordadas:
 --   C=000: F = A+B        (n+x con M=1; n con M=0)
 --   C=001: F = (B<<1)+A (2n+x; desplazamiento interno,
 --                       sin shifter)
